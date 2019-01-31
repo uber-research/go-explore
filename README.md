@@ -1,5 +1,7 @@
 # Go-Explore
 
+Paper located at: [arxiv.org/abs/1901.10995](https://arxiv.org/abs/1901.10995)
+
 ## Requirements
 
 Tested with Python 3.6. `requirements.txt` gives the exact libraries used on a test machine
