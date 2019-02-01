@@ -16,6 +16,7 @@ able to run all phases. Unless otherwise specified, libraries can be installed u
 - opencv-python
 
 **Additional libraries for demo generation:**
+- ffmpeg (non-Python library, install using package manager)
 - imageio
 - fire
 
