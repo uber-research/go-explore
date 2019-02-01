@@ -8,4 +8,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python atari_reset/train_atari.py --game $1 --steps_per_demo=200 --move_threshold=0.1 --save_path=$3 --demo=$2 --sticky
+PYTHONPATH="${PYTHONPATH}:." python3 atari_reset/train_atari.py --game $1 --steps_per_demo=200 --move_threshold=0.1 --save_path=$3 --demo=$2 --sticky

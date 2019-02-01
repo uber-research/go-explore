@@ -8,4 +8,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python gen_demo/main.py "$@"
+PYTHONPATH="${PYTHONPATH}:." python3 gen_demo/main.py "$@"

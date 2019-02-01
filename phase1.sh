@@ -8,4 +8,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python goexplore_py/main.py "$@"
+PYTHONPATH="${PYTHONPATH}:." python3 goexplore_py/main.py "$@"

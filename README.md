@@ -29,10 +29,11 @@ E.g. you could run:
 `cp -r atari-demo/atari_demo gen_demo`
 
 **Additional libraries for Phase 2:**
+- [openmpi](https://www.open-mpi.org/software/ompi/v4.0/) (non-Python library, install for source or using package manager)
 - tensorflow-gpu
 - pandas
-- horovod
-- baselines
+- horovod (install using `HOROVOD_WITH_TENSORFLOW=1 pip install horovod`
+- baselines (ignore mujoco-related errors)
 
 Additionally, to run Phase 2, you will need to clone [uber-research/atari-reset](https://github.com/uber-research/atari-reset) (note: this is an improved fork of the original project, which you can find at [openai/atari-reset](https://github.com/openai/atari-reset)) and
 put it, copy it or link to it as `atari_reset` in the root folder for this project.

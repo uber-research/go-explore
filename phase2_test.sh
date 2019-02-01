@@ -8,4 +8,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python atari_reset/test_atari.py --game $1 --save_path=$3 --load_path=$2 --sticky --noops --num_timesteps=100000000
+PYTHONPATH="${PYTHONPATH}:." python3 atari_reset/test_atari.py --game $1 --save_path=$3 --load_path=$2 --sticky --noops --num_timesteps=100000000
