@@ -5,7 +5,7 @@ Paper located at: [arxiv.org/abs/1901.10995](https://arxiv.org/abs/1901.10995)
 ## Requirements
 
 Tested with Python 3.6. `requirements.txt` gives the exact libraries used on a test machine
-able to run all phases.
+able to run all phases. Unless otherwise specified, libraries can be installed using `pip install <library_name>`.
 
 **Required libraries for Phase 1:**
 - matplotlib
