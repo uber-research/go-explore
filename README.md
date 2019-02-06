@@ -4,7 +4,7 @@ Paper located at: [arxiv.org/abs/1901.10995](https://arxiv.org/abs/1901.10995)
 
 ## Requirements
 
-Tested with Python 3.6. `requirements.txt` gives the exact libraries used on a test machine
+Tested with Python 3.6. `requirements.txt` gives the exact libraries and versions used on a test machine
 able to run all phases. Unless otherwise specified, libraries can be installed using `pip install <library_name>`.
 
 **Required libraries for Phase 1:**
@@ -12,8 +12,12 @@ able to run all phases. Unless otherwise specified, libraries can be installed u
 - loky==2.3.1
 - dataclasses
 - tqdm
-- gym\[atari\]
+- gym
 - opencv-python
+
+These libraries are sufficient to run Go-Explore Phase 1 with custom environments, which you may model after `goexplore_py/pitfall_env.py` and `goexplore_py/montezuma_env.py`.
+
+The ALE/atari-py is not part of Go-Explore. If you are interested in running Go-Explore on Atari environments (for example to reproduce our experiments), you may install `gym\[atari\]` instead of just `gym`. Doing so will install atari-py. atari-py is licensed under GPLv2.
 
 **Additional libraries for demo generation:**
 - ffmpeg (non-Python library, install using package manager)

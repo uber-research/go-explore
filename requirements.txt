@@ -1,10 +1,8 @@
 absl-py==0.7.0
 astor==0.7.1
-atari-py==0.1.7
 baselines==0.1.5
 certifi==2018.11.29
 cffi==1.11.5
-chardet==3.0.4
 Click==7.0
 cloudpickle==0.7.0
 cycler==0.10.0
