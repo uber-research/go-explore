@@ -17,7 +17,7 @@ able to run all phases. Unless otherwise specified, libraries can be installed u
 
 These libraries are sufficient to run Go-Explore Phase 1 with custom environments, which you may model after `goexplore_py/pitfall_env.py` and `goexplore_py/montezuma_env.py`.
 
-The ALE/atari-py is not part of Go-Explore. If you are interested in running Go-Explore on Atari environments (for example to reproduce our experiments), you may install `gym\[atari\]` instead of just `gym`. Doing so will install atari-py. atari-py is licensed under GPLv2.
+The ALE/atari-py is not part of Go-Explore. If you are interested in running Go-Explore on Atari environments (for example to reproduce our experiments), you may install `gym[atari]` instead of just `gym`. Doing so will install atari-py. atari-py is licensed under GPLv2.
 
 **Additional libraries for demo generation:**
 - ffmpeg (non-Python library, install using package manager)
