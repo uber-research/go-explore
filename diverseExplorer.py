@@ -256,7 +256,8 @@ class PPOExplorer_v2:
 
 		return actions
 
-
+	def __repr__(self):
+		return 'ppo'
 
 
 

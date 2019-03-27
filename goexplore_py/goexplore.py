@@ -82,6 +82,7 @@ class TrajectoryElement:
 
 POOL = None
 ENV = None
+GRID = None
 
 def get_env():
     return ENV
@@ -195,6 +196,7 @@ class Explore:
             return pos
 
     def run_explorer(self, explorer, start_cell=None, max_steps=-1):
+        global GRID
         explorer.init_trajectory(start_cell, self.grid)
         trajectory = []
         while True:
@@ -214,7 +216,12 @@ class Explore:
                     self.get_real_cell()
                 )
             )
-            explorer.seen_state(trajectory[-1])
+            if explorer.__repr__() == "ppo":
+                tEle = trajectory[-1].copy()
+                tEle.reward += 1 / (GRID[tEle.to.cell].seen_times + 1)
+                explorer.seen_state(tEle)
+            else:
+                explorer.seen_state(trajectory[-1])
             if done:
                 break
         return trajectory
@@ -293,6 +300,8 @@ class Explore:
         # VERY large. We temporarily replace it with None so it doesn't
         # need to be serialized by the pool.
         old_grid = self.grid
+        global GRID
+        GRID = old_grid
         self.grid = None
 
         trajectories = [e.data for e in POOL.map(self.process_cell, chosen_cells)]
