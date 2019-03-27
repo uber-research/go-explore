@@ -13,6 +13,7 @@ from goexplore_py.goexplore import *
 import goexplore_py.montezuma_env as montezuma_env
 import goexplore_py.pitfall_env as pitfall_env
 import cProfile
+from diverseExplorer import PPOExplorer_v2 as PPOExplorer
 
 VERSION = 1
 
@@ -56,10 +57,7 @@ def _run(resolution, score_objects, mean_repeat=20,
 
     if game == "robot":
         explorer = RepeatedRandomExplorerRobot()
-    elif explorer == 'repeated':
-        explorer = RepeatedRandomExplorer(mean_repeat)
-    else:
-        explorer = RandomExplorer()
+
 
     if game == "montezuma":
         game_class = MyMontezuma
@@ -86,6 +84,14 @@ def _run(resolution, score_objects, mean_repeat=20,
         )
     else:
         raise NotImplementedError("Unknown game: " + game)
+
+    if explorer == "ppo":
+        explorer = PPOExplorer(env=game_class.env, actors=8, nexp=explore_steps, lr=1.0e-03, lr_decay=0.99999,
+                               cliprange=0.1, cl_decay=0.99999, n_tr_epochs=3)
+    elif explorer == 'repeated':
+        explorer = RepeatedRandomExplorer(mean_repeat)
+    else:
+        explorer = RandomExplorer()
 
     selector = WeightedSelector(game_class,
                                 seen=Weight(seen_weight, seen_power),
