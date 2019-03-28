@@ -27,6 +27,7 @@ MAX_FRAMES = None
 MAX_FRAMES_COMPUTE = None
 MAX_ITERATIONS = None
 MAX_TIME = 12 * 60 * 60
+MAX_LEVEL = None
 
 PROFILER = None
 
@@ -161,9 +162,12 @@ def _run(resolution, score_objects, mean_repeat=20,
                 return False
             if MAX_ITERATIONS is not None and n_iters >= MAX_ITERATIONS:
                 return False
+            if MAX_LEVEL is not None and len(Counter(e.level for e in expl.grid).keys()) > MAX_LEVEL:
+                return False
             return True
 
-        summaryWriter = summary.FileWriter(logdir=f'log/{explorer.__repr__()}_res_{resolution}_explStep_{explore_steps}_cellbatch_{batch_size}', flush_secs=20)
+        summaryWriter = summary.FileWriter(logdir=f'log/{explorer.__repr__()}_res_{resolution}_explStep_{explore_steps}'
+		f'_cellbatch_{batch_size}_{time.time()}', flush_secs=20)
         keys_found = []
 
         while should_continue():
@@ -364,6 +368,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_hours', '--mh', type=float, default=12, help='Maximum number of hours to run this for.')
     parser.add_argument('--checkpoint_game', type=int, default=20_000_000_000_000, help='Save a checkpoint every this many GAME frames (note: recommmended to ignore, since this grows very fast at the end).')
     parser.add_argument('--checkpoint_compute', type=int, default=1_000_000, help='Save a checkpoint every this many COMPUTE frames.')
+    parser.add_argument('--max_level', type=int, default=None, help='Set max number of levels to complete. Complete means seen the level after')
 
     parser.add_argument('--pictures', dest='save_pictures', action='store_true', help='Save pictures of the pyramid every checkpoint (uses more space).')
     parser.add_argument('--prob_pictures', '--pp', dest='save_prob_pictures', action='store_true',
@@ -416,6 +421,7 @@ if __name__ == '__main__':
     MAX_FRAMES_COMPUTE = args.max_compute_steps
     MAX_TIME = args.max_hours * 3600
     MAX_ITERATIONS = args.max_iterations
+    MAX_LEVEL = args.max_level
 
     if args.profile:
         PROFILER = cProfile.Profile()
