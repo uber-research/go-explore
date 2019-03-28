@@ -121,9 +121,8 @@ class PPOExplorer:
 		return actions
 
 class PPOExplorer_v2:
-	def __init__(self, env, actors,  nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1, gamma=0.99, lam=0.95, policy=policies.CnnPolicy):
-		ob_space = env.observation_space
-		ac_space = env.action_space
+	def __init__(self, actors,  nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1, gamma=0.99, lam=0.95):
+
 
 		self.nacts = actors
 		self.actor = 0
@@ -146,11 +145,17 @@ class PPOExplorer_v2:
 
 		self.n_train_epoch = n_tr_epochs
 		self.cliprange = cliprange
+		self.model = None
+
+		self.obs = None
+
+	def init_model(self, env, policy=policies.CnnPolicy):
+		ob_space = env.observation_space
+		ac_space = env.action_space
 		self.model = ppo2.Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
-								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1, max_grad_norm=0.5)
-
+								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
+								max_grad_norm=0.5)
 		self.obs = np.zeros((1,) + ob_space.shape, dtype=self.model.train_model.X.dtype.name)
-
 
 	def init_seed(self):
 		# self.exp = 0
