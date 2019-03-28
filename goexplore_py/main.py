@@ -10,10 +10,14 @@
 from sys import platform
 from goexplore_py.randselectors import *
 from goexplore_py.goexplore import *
-import goexplore_py.montezuma_env as montezuma_env
+#import goexplore_py.montezuma_env as montezuma_env
+from goexplore_py.montezuma_env import MyMontezuma
 import goexplore_py.pitfall_env as pitfall_env
 import cProfile
 from diverseExplorer import PPOExplorer_v2 as PPOExplorer
+from tensorflow import summary, ConfigProto, Session
+from goexplore_py.myUtil import makeHistProto
+
 
 VERSION = 1
 
@@ -57,7 +61,20 @@ def _run(resolution, score_objects, mean_repeat=20,
 
     if game == "robot":
         explorer = RepeatedRandomExplorerRobot()
-
+    elif explorer == "ppo":
+        ncpu = multiprocessing.cpu_count()
+        if sys.platform == 'darwin': ncpu //= 2
+        config = ConfigProto(allow_soft_placement=True,
+                                intra_op_parallelism_threads=ncpu,
+                                inter_op_parallelism_threads=ncpu)
+        config.gpu_options.allow_growth = True  # pylint: disable=E1101
+        Session(config=config).__enter__()
+        explorer = PPOExplorer(actors=8, nexp=explore_steps, lr=1.0e-03, lr_decay=0.99999,
+                               cliprange=0.1, cl_decay=0.99999, n_tr_epochs=3)
+    elif explorer == 'repeated':
+        explorer = RepeatedRandomExplorer(mean_repeat)
+    else:
+        explorer = RandomExplorer()
 
     if game == "montezuma":
         game_class = MyMontezuma
@@ -85,13 +102,7 @@ def _run(resolution, score_objects, mean_repeat=20,
     else:
         raise NotImplementedError("Unknown game: " + game)
 
-    if explorer == "ppo":
-        explorer = PPOExplorer(env=game_class.env, actors=8, nexp=explore_steps, lr=1.0e-03, lr_decay=0.99999,
-                               cliprange=0.1, cl_decay=0.99999, n_tr_epochs=3)
-    elif explorer == 'repeated':
-        explorer = RepeatedRandomExplorer(mean_repeat)
-    else:
-        explorer = RandomExplorer()
+
 
     selector = WeightedSelector(game_class,
                                 seen=Weight(seen_weight, seen_power),
@@ -152,6 +163,9 @@ def _run(resolution, score_objects, mean_repeat=20,
                 return False
             return True
 
+        summaryWriter = summary.FileWriter(logdir=f'log/{explorer.__repr__()}_res_{resolution}_explStep_{explore_steps}_cellbatch_{batch_size}', flush_secs=20)
+        keys_found = []
+
         while should_continue():
             # Run one iteration
             old = expl.frames_true
@@ -166,6 +180,21 @@ def _run(resolution, score_objects, mean_repeat=20,
             t_time.update(int(cur_time - last_time))
             last_time = cur_time
             n_iters += 1
+
+            entry = [summary.Summary.Value(tag='Rooms_Found', simple_value=len(get_env().rooms))]
+            entry.append(summary.Summary.Value(tag='Cells', simple_value=len(expl.grid)))
+            entry.append(summary.Summary.Value(tag='Top_score', simple_value=max(e.score for e in expl.grid.values())))
+            dist = Counter(e.score for e in expl.real_grid)
+            for key in dist.keys():
+                if key not in keys_found:
+                    keys_found.append(key)
+            hist = makeHistProto(dist, bins=30, keys=keys_found)
+            leveldist = Counter(e.level for e in expl.real_grid)
+            histlvl = makeHistProto(leveldist, bins=5)
+            entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
+            entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
+
+            summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute)
 
             # In some circumstances (see comments), save a checkpoint and some pictures
             if ((not seen_level_1 and expl.seen_level_1) or  # We have solved level 1
@@ -299,7 +328,10 @@ if __name__ == '__main__':
         # https://github.com/opencv/opencv/issues/5150
         cv2.setNumThreads(0)
     parser = argparse.ArgumentParser()
+
     parser.add_argument('--resolution', '--res', type=float, default=16, help='Length of the side of a grid cell.')
+    parser.add_argument('--explorer', '--expl', type=str, default='repeated',
+                        help='The explorer to use when searching for solution')
     parser.add_argument('--use_scores', dest='use_objects', action='store_false', help='Use scores in the cell description. Otherwise objects will be used.')
     parser.add_argument('--repeat_action', '--ra', type=int, default=20, help='The average number of times that actions will be repeated in the exploration phase.')
     parser.add_argument('--explore_steps', type=int, default=100, help='Maximum number of steps in the explore phase.')
@@ -389,7 +421,7 @@ if __name__ == '__main__':
         PROFILER = cProfile.Profile()
         PROFILER.enable()
     try:
-        run(resolution=args.resolution, score_objects=args.use_objects,
+        run(resolution=args.resolution, score_objects=args.use_objects, explorer=args.explorer,
             mean_repeat=args.repeat_action, explore_steps=args.explore_steps, ignore_death=args.ignore_death,
             base_path=args.base_path, seed_path=args.seed_path, x_repeat=args.x_repeat, seen_weight=args.seen_weight,
             seen_power=args.seen_power, chosen_weight=args.chosen_weight, chosen_power=args.chosen_power,

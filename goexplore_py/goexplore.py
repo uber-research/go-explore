@@ -106,6 +106,7 @@ class Explore:
         global POOL, ENV
         self.env_info = env
         self.make_env()
+
         self.pool_class = pool_class
         self.reset_pool = reset_pool
         if self.reset_pool:
@@ -118,6 +119,8 @@ class Explore:
         self.batch_size = batch_size
         self.explore_steps = explore_steps
         self.explorer = explorer_policy
+        if self.explorer.__repr__() == 'ppo':
+            self.explorer.init_model(env)
         self.selector = cell_selector
         self.grid_info = grid_info
         self.grid = defaultdict(Cell)
@@ -220,6 +223,7 @@ class Explore:
                 tEle = trajectory[-1].copy()
                 tEle.reward += 1 / (GRID[tEle.to.cell].seen_times + 1)
                 explorer.seen_state(tEle)
+
             else:
                 explorer.seen_state(trajectory[-1])
             if done:
@@ -393,6 +397,8 @@ class Explore:
             for cell_key in cells_to_reset:
                 self.grid[cell_key].chosen_times = 0
                 self.grid[cell_key].chosen_since_new = 0
+
+
 
         return [(k) for k, c, s, n, shape, pix in chosen_cells], trajectories
 
