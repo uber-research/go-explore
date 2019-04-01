@@ -64,7 +64,8 @@ def _run(resolution, score_objects, mean_repeat=20,
         cliprange=0.1, cl_decay=0.99999,
         n_tr_epochs=2,
          mbatch=4,
-        gamma=0.99, lam=0.95
+        gamma=0.99, lam=0.95,
+         log_path="log"
 
 
        ):
@@ -180,7 +181,7 @@ def _run(resolution, score_objects, mean_repeat=20,
                 return False
             return True
 
-        logDir = f'log/{explorer.__repr__()}_res_{resolution}_explStep_{explore_steps}'f'_cellbatch_{batch_size}'
+        logDir = f'{log_path}/{explorer.__repr__()}/res_{resolution}_explStep_{explore_steps}'f'_cellbatch_{batch_size}'
         if explorer.__repr__() == 'ppo':
             logDir = f'{logDir}_actors_{actors}_exp_{nexp}_lr_{lr}_lrDec_{lr_decay}_cl_{cliprange}_clDec_{cl_decay}' \
                 f'_mbatch_{mbatch}_trainEpochs_{n_tr_epochs}_gamma_{gamma}_lam_{lam}'
@@ -216,6 +217,7 @@ def _run(resolution, score_objects, mean_repeat=20,
             histlvl = makeHistProto(leveldist, bins=5)
             entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
             entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
+            entry.append(summary.Summary.value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
 
             summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
 
@@ -363,6 +365,7 @@ if __name__ == '__main__':
     parser.add_argument('--path_postfix', '--pf', type=str, default='', help='String appended to the base path.')
     parser.add_argument('--seed_path', type=str, default=None, help='Path from which to load existing results.')
     parser.add_argument('--x_repeat', type=int, default=2, help='How much to duplicate pixels along the x direction. 2 is closer to how the games were meant to be played, but 1 is the original emulator resolution. NOTE: affects the behavior of GoExplore.')
+    parser.add_argument('--log_path', type=str, default='log', help='Default = log')
 
     parser.add_argument('--seen_weight', '--sw', type=float, default=0.0, help='The weight of the "seen" attribute in cell selection.')
     parser.add_argument('--seen_power', '--sp', type=float, default=0.5, help='The power of the "seen" attribute in cell selection.')

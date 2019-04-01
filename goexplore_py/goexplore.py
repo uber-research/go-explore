@@ -146,6 +146,7 @@ class Explore:
         self.pos_cache = None
         self.reset_cell_on_update = reset_cell_on_update
 
+
     def make_env(self):
         global ENV
         if ENV is None:
