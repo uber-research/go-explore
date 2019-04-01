@@ -8,6 +8,7 @@
 # limitations under the License.
 
 from .import_ai import *
+from baselines.common.atari_wrappers import *
 
 
 class MontezumaPosLevel:
@@ -133,6 +134,7 @@ class MyMontezuma:
         self.room_time = (self.get_pos().room, 0)
         if self.unprocessed_state:
             return unprocessed_state
+
         return copy.copy(self.state)
 
     def pos_from_unprocessed_state(self, face_pixels, unprocessed_state):
@@ -256,6 +258,7 @@ class MyMontezuma:
         self.pos = pos
         self.room_time = room_time
         self.ram_death_state = ram_death_state
+
         return copy.copy(self.state)
 
     def is_transition_screen(self, unprocessed_state):

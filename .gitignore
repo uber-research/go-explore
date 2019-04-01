@@ -17,3 +17,4 @@ to_kill
 .unison*
 *.orig
 *~master
+log/

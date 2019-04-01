@@ -14,7 +14,7 @@ from goexplore_py.goexplore import *
 from goexplore_py.montezuma_env import MyMontezuma
 import goexplore_py.pitfall_env as pitfall_env
 import cProfile
-from diverseExplorer import PPOExplorer_v2 as PPOExplorer
+
 from tensorflow import summary, ConfigProto, Session
 from goexplore_py.myUtil import makeHistProto
 
@@ -57,7 +57,16 @@ def _run(resolution, score_objects, mean_repeat=20,
         keep_prob_pictures=False,
         keep_item_pictures=False,
         batch_size=100,
-        reset_cell_on_update=False
+        reset_cell_on_update=False,
+         actors=8,
+         nexp = None,
+         lr=1.0e-03, lr_decay=0.99999,
+        cliprange=0.1, cl_decay=0.99999,
+        n_tr_epochs=2,
+         mbatch=4,
+        gamma=0.99, lam=0.95
+
+
        ):
 
     if game == "robot":
@@ -70,8 +79,10 @@ def _run(resolution, score_objects, mean_repeat=20,
                                 inter_op_parallelism_threads=ncpu)
         config.gpu_options.allow_growth = True  # pylint: disable=E1101
         Session(config=config).__enter__()
-        explorer = PPOExplorer(actors=8, nexp=explore_steps, lr=1.0e-03, lr_decay=0.99999,
-                               cliprange=0.1, cl_decay=0.99999, n_tr_epochs=3)
+        if nexp is None:
+            nexp = explore_steps
+        explorer = PPOExplorer(actors=actors, nexp=nexp, lr=lr, lr_decay=lr_decay,
+                               cliprange=cliprange, cl_decay=cl_decay, n_tr_epochs=n_tr_epochs, nminibatches=mbatch, gamma=gamma, lam=lam)
     elif explorer == 'repeated':
         explorer = RepeatedRandomExplorer(mean_repeat)
     else:
@@ -145,6 +156,9 @@ def _run(resolution, score_objects, mean_repeat=20,
 
     n_digits = 12
 
+    old = 0
+    old_compute = 0
+
     with tqdm(desc='Time (seconds)', smoothing=0, total=MAX_TIME) as t_time, tqdm(desc='Iterations', total=MAX_ITERATIONS) as t_iter, tqdm(desc='Compute steps', total=MAX_FRAMES_COMPUTE) as t_compute, tqdm(desc='Game step', total=MAX_FRAMES) as t:
         start_time = time.time()
         last_time = np.round(start_time)
@@ -156,9 +170,9 @@ def _run(resolution, score_objects, mean_repeat=20,
         def should_continue():
             if MAX_TIME is not None and time.time() - start_time >= MAX_TIME:
                 return False
-            if MAX_FRAMES is not None and expl.frames_true >= MAX_FRAMES:
+            if MAX_FRAMES is not None and expl.frames_true + old >= MAX_FRAMES:
                 return False
-            if MAX_FRAMES_COMPUTE is not None and expl.frames_compute >= MAX_FRAMES_COMPUTE:
+            if MAX_FRAMES_COMPUTE is not None and expl.frames_compute + old_compute>= MAX_FRAMES_COMPUTE:
                 return False
             if MAX_ITERATIONS is not None and n_iters >= MAX_ITERATIONS:
                 return False
@@ -166,19 +180,24 @@ def _run(resolution, score_objects, mean_repeat=20,
                 return False
             return True
 
-        summaryWriter = summary.FileWriter(logdir=f'log/{explorer.__repr__()}_res_{resolution}_explStep_{explore_steps}'
-		f'_cellbatch_{batch_size}_{time.time()}', flush_secs=20)
+        logDir = f'log/{explorer.__repr__()}_res_{resolution}_explStep_{explore_steps}'f'_cellbatch_{batch_size}'
+        if explorer.__repr__() == 'ppo':
+            logDir = f'{logDir}_actors_{actors}_exp_{nexp}_lr_{lr}_lrDec_{lr_decay}_cl_{cliprange}_clDec_{cl_decay}' \
+                f'_mbatch_{mbatch}_trainEpochs_{n_tr_epochs}_gamma_{gamma}_lam_{lam}'
+        logDir = f'{logDir}_{time.time()}'
+        summaryWriter = summary.FileWriter(logdir=logDir, flush_secs=20)
         keys_found = []
 
         while should_continue():
             # Run one iteration
-            old = expl.frames_true
-            old_compute = expl.frames_compute
+            old += expl.frames_true
+            old_compute += expl.frames_compute
 
             expl.run_cycle()
 
-            t.update(expl.frames_true - old)
-            t_compute.update(expl.frames_compute - old_compute)
+
+            t.update(expl.frames_true )#- old)
+            t_compute.update(expl.frames_compute )#- old_compute)
             t_iter.update(1)
             cur_time = np.round(time.time())
             t_time.update(int(cur_time - last_time))
@@ -198,7 +217,7 @@ def _run(resolution, score_objects, mean_repeat=20,
             entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
             entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
 
-            summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute)
+            summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
 
             # In some circumstances (see comments), save a checkpoint and some pictures
             if ((not seen_level_1 and expl.seen_level_1) or  # We have solved level 1

@@ -8,6 +8,7 @@
 # limitations under the License.
 
 from .explorers import *
+from diverseExplorer import PPOExplorer_v3 as PPOExplorer
 from .montezuma_env import *
 from .utils import *
 import loky
@@ -77,6 +78,7 @@ class TrajectoryElement:
     real_pos: MontezumaPosLevel
 
 
+
 # ### Main
 
 
@@ -119,8 +121,7 @@ class Explore:
         self.batch_size = batch_size
         self.explore_steps = explore_steps
         self.explorer = explorer_policy
-        if self.explorer.__repr__() == 'ppo':
-            self.explorer.init_model(env)
+
         self.selector = cell_selector
         self.grid_info = grid_info
         self.grid = defaultdict(Cell)
@@ -135,7 +136,8 @@ class Explore:
 
         self.state = None
         self.reset()
-
+        if self.explorer.__repr__() == 'ppo':
+            self.explorer.init_model(get_env().env)
         self.grid[self.get_cell()].trajectory_len = 0
         self.grid[self.get_cell()].score = 0
         self.grid[self.get_cell()].exact_pos = self.get_pos()
@@ -177,7 +179,7 @@ class Explore:
 
     def restore(self, val):
         self.make_env()
-        ENV.restore(val)
+        self.state = ENV.restore(val)
 
     def get_real_cell(self):
         pos = self.get_real_pos()
@@ -200,13 +202,14 @@ class Explore:
 
     def run_explorer(self, explorer, start_cell=None, max_steps=-1):
         global GRID
-        explorer.init_trajectory(start_cell, self.grid)
+        explorer.init_trajectory(start_cell, GRID)
         trajectory = []
         while True:
             initial_pos_info = self.get_pos_info(include_restore=False)
             if ((max_steps > 0 and len(trajectory) >= max_steps) or
                     initial_pos_info.cell == start_cell):
                 break
+
             action = explorer.get_action(self.state, ENV)
             self.state, reward, done, _ = self.step(action)
             self.frames_true += 1
@@ -220,9 +223,7 @@ class Explore:
                 )
             )
             if explorer.__repr__() == "ppo":
-                tEle = trajectory[-1].copy()
-                tEle.reward += 1 / (GRID[tEle.to.cell].seen_times + 1)
-                explorer.seen_state(tEle)
+                explorer.seen_state(1 / (GRID[trajectory[-1].to.cell].seen_times + 1))
 
             else:
                 explorer.seen_state(trajectory[-1])
@@ -250,7 +251,7 @@ class Explore:
             # TODO: implement recovering the restore from, say, the trajectory on the cell, so that this
             # isn't a problem anymore when recovering from a checkpoint.
             assert cell.trajectory_len == 0, 'Cells must have a restore unless they are the initial state'
-            self.reset()
+            self.state = self.reset()
 
         start_cell = self.get_cell()
         end_trajectory = self.run_seed(seed, start_cell=cell, max_steps=self.explore_steps)
@@ -308,7 +309,8 @@ class Explore:
         GRID = old_grid
         self.grid = None
 
-        trajectories = [e.data for e in POOL.map(self.process_cell, chosen_cells)]
+        #trajectories = [e.data for e in POOL.map(self.process_cell, chosen_cells)]
+        trajectories = [e.data for e in map(self.process_cell, chosen_cells)]
         if self.reset_pool and (self.cycles + 1) % 100 == 0:
             POOL.close()
             POOL.join()
