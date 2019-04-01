@@ -203,7 +203,7 @@ class Explore:
 
     def run_explorer(self, explorer, start_cell=None, max_steps=-1):
         global GRID
-        explorer.init_trajectory(start_cell, GRID)
+        explorer.init_trajectory(start_cell, self.grid)
         trajectory = []
         while True:
             initial_pos_info = self.get_pos_info(include_restore=False)
@@ -223,6 +223,7 @@ class Explore:
                     self.get_real_cell()
                 )
             )
+            assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
             if explorer.__repr__() == "ppo":
                 explorer.seen_state(1 / (GRID[trajectory[-1].to.cell].seen_times + 1))
 
