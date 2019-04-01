@@ -3,6 +3,7 @@
 
 import tensorflow as tf
 import numpy as np
+import gym
 
 from baselines.ppo2 import ppo2, policies
 from baselines.common.atari_wrappers import *
@@ -294,7 +295,8 @@ class PPOExplorer_v3:
 		self.env = None
 
 	def init_model(self, env, policy=policies.CnnPolicy):
-		self.env = ClipRewardEnv(FrameStack(WarpFrame(env), 4))
+		self.env = gym.make('MontezumaRevengeDeterministic-v4')
+		self.env = ClipRewardEnv(FrameStack(WarpFrame(self.env), 4))
 		ob_space = self.env.observation_space
 		ac_space = self.env.action_space
 		self.model = ppo2.Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
