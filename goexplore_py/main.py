@@ -15,7 +15,7 @@ from goexplore_py.montezuma_env import MyMontezuma
 import goexplore_py.pitfall_env as pitfall_env
 import cProfile
 
-from tensorflow import summary, ConfigProto, Session
+from tensorflow import summary, ConfigProto, Session, name_scope
 from goexplore_py.myUtil import makeHistProto
 
 
@@ -205,6 +205,7 @@ def _run(resolution, score_objects, mean_repeat=20,
             last_time = cur_time
             n_iters += 1
 
+
             entry = [summary.Summary.Value(tag='Rooms_Found', simple_value=len(get_env().rooms))]
             entry.append(summary.Summary.Value(tag='Cells', simple_value=len(expl.grid)))
             entry.append(summary.Summary.Value(tag='Top_score', simple_value=max(e.score for e in expl.grid.values())))
@@ -217,7 +218,7 @@ def _run(resolution, score_objects, mean_repeat=20,
             histlvl = makeHistProto(leveldist, bins=5)
             entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
             entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
-            entry.append(summary.Summary.value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
+            entry.append(summary.Summary.Value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
 
             summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
 
@@ -472,7 +473,8 @@ if __name__ == '__main__':
             keep_prob_pictures=args.keep_prob_pictures,
             keep_item_pictures=args.keep_item_pictures,
             batch_size=args.batch_size,
-            reset_cell_on_update=args.reset_cell_on_update)
+            reset_cell_on_update=args.reset_cell_on_update,
+            log_path=args.log_path)
         if PROFILER is not None:
             PROFILER.disable()
     finally:
