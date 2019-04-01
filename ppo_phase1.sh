@@ -14,7 +14,7 @@
     --vert_weight=0.1 \
     --batch_size 1000 \
     --explore_steps=100 \
-    --max_hours=24 \
+    --max_hours=480 \
     --max_compute_steps=40000000 \
     --remember_rooms \
     --expl='ppo' \
