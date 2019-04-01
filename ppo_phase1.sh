@@ -17,7 +17,8 @@
     --max_hours=24 \
     --max_compute_steps=40000000 \
     --remember_rooms \
-    --expl='ppo'
+    --expl='ppo' \
+    --log_path='log/it_1_no_parallel'
 #--pictures \
 	#--pp \
 	#--ip \
