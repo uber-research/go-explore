@@ -240,6 +240,7 @@ class Explore:
     def process_cell(self, info):
         # This function runs in a SUBPROCESS, and processes a single cell.
         cell_key, cell, seed, known_rooms, target_shape, max_pix = info.data
+        cell = copy.copy(cell)
         self.env_info[0].TARGET_SHAPE = target_shape
         self.env_info[0].MAX_PIX_VALUE = max_pix
         self.frames_true = 0
