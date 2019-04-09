@@ -223,9 +223,13 @@ class Explore:
                     self.get_real_cell()
                 )
             )
-            assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
+            #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
             if explorer.__repr__() == "ppo":
-                explorer.seen_state(1 / (GRID[trajectory[-1].to.cell].seen_times + 1))
+
+                if trajectory[-1].to.cell not in GRID:
+                    explorer.seen_state(1 + trajectory[-1].reward)
+                else:
+                    explorer.seen_state(0 + trajectory[-1].reward)
 
             else:
                 explorer.seen_state(trajectory[-1])
@@ -241,7 +245,7 @@ class Explore:
     def process_cell(self, info):
         # This function runs in a SUBPROCESS, and processes a single cell.
         cell_key, cell, seed, known_rooms, target_shape, max_pix = info.data
-        cell = copy.copy(cell)
+
         self.env_info[0].TARGET_SHAPE = target_shape
         self.env_info[0].MAX_PIX_VALUE = max_pix
         self.frames_true = 0
@@ -285,6 +289,10 @@ class Explore:
         # A lot of what this function does is only aimed at minimizing the amount of data that needs
         # to be pickled to the workers, which is why it sets a lot of variables to None only to restore
         # them later.
+        # for key in self.grid.keys():
+        #     if self.grid[key].trajectory_len > 0:
+        #         assert self.grid[key].restore is not None, f'No cell restore in iter: {self.cycles}'
+
         global POOL
         if self.start is None:
             self.start = time.time()
@@ -300,6 +308,8 @@ class Explore:
             cell.seen = None
             cell.chain = None
             seed = random.randint(0, 2 ** 31)
+            # if cell.trajectory_len > 0:
+            #     assert cell.restore is not None, 'Choosen cell without restore'
             chosen_cells.append(TimedPickle((cell_key, cell, seed,
                                              len(ENV.rooms), self.env_info[0].TARGET_SHAPE,
                                              self.env_info[0].MAX_PIX_VALUE), 'args', enabled=(i == 0 and False)))

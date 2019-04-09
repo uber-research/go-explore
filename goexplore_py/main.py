@@ -356,7 +356,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--resolution', '--res', type=float, default=16, help='Length of the side of a grid cell.')
-    parser.add_argument('--explorer', '--expl', type=str, default='repeated',
+    parser.add_argument('--explorer', '--expl', type=str, default='ppo',
                         help='The explorer to use when searching for solution')
     parser.add_argument('--use_scores', dest='use_objects', action='store_false', help='Use scores in the cell description. Otherwise objects will be used.')
     parser.add_argument('--repeat_action', '--ra', type=int, default=20, help='The average number of times that actions will be repeated in the exploration phase.')
