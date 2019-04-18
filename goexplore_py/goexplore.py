@@ -12,6 +12,7 @@ from diverseExplorer import PPOExplorer_v3 as PPOExplorer
 from .montezuma_env import *
 from .utils import *
 import loky
+from tensorflow import summary
 
 class LPool:
     def __init__(self, n_cpus, maxtasksperchild=100):
@@ -145,6 +146,9 @@ class Explore:
         self.real_grid = set()
         self.pos_cache = None
         self.reset_cell_on_update = reset_cell_on_update
+        self.summary = []
+        self.IR = 0
+        self.dones = 0
 
 
     def make_env(self):
@@ -226,14 +230,16 @@ class Explore:
             #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
             if explorer.__repr__() == "ppo":
 
-                if trajectory[-1].to.cell not in GRID:
+                if not trajectory[-1].done and trajectory[-1].to.cell not in GRID:
                     explorer.seen_state(1 + trajectory[-1].reward)
+                    self.IR += 1
                 else:
                     explorer.seen_state(0 + trajectory[-1].reward)
 
             else:
                 explorer.seen_state(trajectory[-1])
             if done:
+                self.dones += 1
                 break
         return trajectory
 
@@ -268,6 +274,7 @@ class Explore:
             if not end_trajectory[-1].done:
                 end_trajectory += self.run_explorer(DoNothingExplorer(), max_steps=self.ignore_death)
             end_trajectory = end_trajectory[:-self.ignore_death]
+
 
         seen_to = set()
         for e in end_trajectory:
@@ -321,9 +328,15 @@ class Explore:
         global GRID
         GRID = old_grid
         self.grid = None
+        self.IR = 0
+        self.dones = 0
 
         #trajectories = [e.data for e in POOL.map(self.process_cell, chosen_cells)]
         trajectories = [e.data for e in map(self.process_cell, chosen_cells)]
+
+        self.summary.append(summary.Summary.Value(tag='Intrisinc Reward', simple_value=self.IR))
+        self.summary.append(summary.Summary.Value(tag='Deaths', simple_value=self.dones))
+
         if self.reset_pool and (self.cycles + 1) % 100 == 0:
             POOL.close()
             POOL.join()

@@ -100,22 +100,24 @@ class LstmPolicy(object):
 
 class CnnPolicy(object):
 
-    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False): #pylint: disable=W0613
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, name='CnnPolicy'): #pylint: disable=W0613
+
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc)
         nact = ac_space.n
-        X = tf.placeholder(tf.uint8, ob_shape) #obs
-        with tf.variable_scope("model", reuse=reuse):
-            h = nature_cnn(X)
-            pi = fc(h, 'pi', nact, init_scale=0.01)
-            vf = fc(h, 'v', 1)[:,0]
+        with tf.name_scope(name):
+            X = tf.placeholder(tf.uint8, ob_shape) #obs
+            with tf.variable_scope("model", reuse=reuse):
+                h = nature_cnn(X)
+                pi = fc(h, 'pi', nact, init_scale=0.01)
+                vf = fc(h, 'v', 1)[:,0]
 
-        self.pdtype = make_pdtype(ac_space)
-        self.pd = self.pdtype.pdfromflat(pi)
+            self.pdtype = make_pdtype(ac_space)
+            self.pd = self.pdtype.pdfromflat(pi)
 
-        a0 = self.pd.sample()
-        neglogp0 = self.pd.neglogp(a0)
-        self.initial_state = None
+            a0 = self.pd.sample()
+            neglogp0 = self.pd.neglogp(a0)
+            self.initial_state = None
 
         def step(ob, *_args, **_kwargs):
             a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob})
