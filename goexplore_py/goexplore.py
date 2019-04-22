@@ -137,8 +137,7 @@ class Explore:
 
         self.state = None
         self.reset()
-        if self.explorer.__repr__() == 'ppo':
-            self.explorer.init_model(get_env().env)
+
         self.grid[self.get_cell()].trajectory_len = 0
         self.grid[self.get_cell()].score = 0
         self.grid[self.get_cell()].exact_pos = self.get_pos()
@@ -216,6 +215,8 @@ class Explore:
                 break
 
             action = explorer.get_action(self.state, ENV)
+            if not isinstance(action, int):
+                action = action.squeeze()
             self.state, reward, done, _ = self.step(action)
             self.frames_true += 1
             self.frames_compute += 1

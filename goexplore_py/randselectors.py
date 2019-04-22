@@ -189,3 +189,100 @@ class WeightedSelector:
 
     def __repr__(self):
         return f'weight-seen-{self.seen}-chosen-{self.chosen}-chosen-since-new-{self.chosen_since_new_weight}-action-{self.action}-room-{self.room_cells}-dir-{self.dir_weights}'
+
+
+class NChainSelector:
+    def __init__(self, game, seen=Weight(0.1), chosen=Weight(), action=Weight(0.1, power=0.5),
+                 room_cells=Weight(0.0, power=0.5), dir_weights=DirWeights(), low_level_weight=0.0,
+                 chosen_since_new_weight=Weight()):
+        self.seen: Weight = seen
+        self.chosen: Weight = chosen
+        self.chosen_since_new_weight: Weight = chosen_since_new_weight
+        self.room_cells: Weight = room_cells
+        self.dir_weights: DirWeights = dir_weights
+        self.action: Weight = action
+        self.low_level_weight: float = low_level_weight
+        self.game = game
+
+    def reached_state(self, elem):
+        pass
+
+    def update(self):
+        pass
+
+    def compute_weight(self, value, weight):
+        return weight.weight * 1 / (value + 0.001) ** weight.power + 0.00001
+
+    def get_seen_weight(self, cell):
+        return self.compute_weight(cell.seen_times, self.seen)
+
+    def get_chosen_weight(self, cell):
+        return self.compute_weight(cell.chosen_times, self.chosen)
+
+    def get_chosen_since_new_weight(self, cell):
+        return self.compute_weight(cell.chosen_since_new, self.chosen_since_new_weight)
+
+    def get_action_weight(self, cell):
+        return self.compute_weight(cell.action_times, self.action)
+
+    def no_neighbor(self, pos, offset, known_cells):
+        x = pos.state + offset[0]
+
+        new_pos = copy.copy(pos)
+        new_pos.state = x
+        res = self.game.make_pos(new_pos) not in known_cells
+        return res
+
+    def get_pos_weight(self, pos, cell, known_cells):
+
+
+        neigh_horiz = 0.0
+        if self.dir_weights.horiz:
+            neigh_horiz = (self.no_neighbor(pos, (-1, 0), known_cells) + self.no_neighbor(pos, (1, 0), known_cells))
+        neigh_vert = 0.0
+        if self.dir_weights.vert:
+            neigh_vert = (self.no_neighbor(pos, (0, -1), known_cells) + self.no_neighbor(pos, (0, 1), known_cells))
+
+        res = self.dir_weights.horiz * neigh_horiz + self.dir_weights.vert * neigh_vert + 1
+        return res
+
+    def get_weight(self, cell_key, cell, known_cells):
+        level_weight = 1.0
+        if not isinstance(cell_key, tuple) and cell_key.level < self.max_level:
+            level_weight = self.low_level_weight ** (self.max_level - cell_key.level)
+        if level_weight == 0.0:
+            return 0.0
+        res = (self.get_pos_weight(cell_key, cell, known_cells) +
+               self.get_seen_weight(cell) +
+               self.get_chosen_weight(cell) +
+               self.get_action_weight(cell) +
+               self.get_chosen_since_new_weight(cell)
+               ) * level_weight
+        return res
+
+    def set_ranges(self, to_choose):
+        if isinstance(to_choose[0], tuple):
+            return
+        self.xrange = (min(e.state for e in to_choose), max(e.state for e in to_choose))
+
+
+    def choose_cell(self, known_cells, size=1):
+        to_choose = list(known_cells.keys())
+        self.set_ranges(to_choose)
+        if len(to_choose) == 1:
+            return [to_choose[0]] * size
+        weights = [
+            self.get_weight(
+                k, known_cells[k], known_cells)
+            for k in to_choose
+        ]
+        total = np.sum(weights)
+        idxs = np.random.choice(
+            list(range(len(to_choose))),
+            size=size,
+            p=[w / total for w in weights]
+        )
+        return [to_choose[i] for i in idxs]
+
+    def __repr__(self):
+        return f'weight-seen-{self.seen}-chosen-{self.chosen}-chosen-since-new-{self.chosen_since_new_weight}-action-{self.action}-room-{self.room_cells}-dir-{self.dir_weights}'

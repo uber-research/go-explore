@@ -13,8 +13,9 @@ from goexplore_py.goexplore import *
 #import goexplore_py.montezuma_env as montezuma_env
 from goexplore_py.montezuma_env import MyMontezuma
 import goexplore_py.pitfall_env as pitfall_env
+from goexplore_py.nchain_env import MyNChain
 import cProfile
-
+from goexplore_py.policies import *
 from tensorflow import summary, ConfigProto, Session, name_scope
 from goexplore_py.myUtil import makeHistProto
 
@@ -76,14 +77,19 @@ def _run(resolution, score_objects, mean_repeat=20,
         ncpu = multiprocessing.cpu_count()
         if sys.platform == 'darwin': ncpu //= 2
         config = ConfigProto(allow_soft_placement=True,
-                                intra_op_parallelism_threads=ncpu,
-                                inter_op_parallelism_threads=ncpu)
+                             intra_op_parallelism_threads=ncpu,
+                             inter_op_parallelism_threads=ncpu)
         config.gpu_options.allow_growth = True  # pylint: disable=E1101
         Session(config=config).__enter__()
         if nexp is None:
             nexp = explore_steps
         explorer = PPOExplorer(actors=actors, nexp=nexp, lr=lr, lr_decay=lr_decay,
-                               cliprange=cliprange, cl_decay=cl_decay, n_tr_epochs=n_tr_epochs, nminibatches=mbatch, gamma=gamma, lam=lam)
+                               cliprange=cliprange, cl_decay=cl_decay, n_tr_epochs=n_tr_epochs,
+                               nminibatches=mbatch, gamma=gamma, lam=lam)
+        if game == 'nchain':
+            explorer.init_model(env="NChain-v0", policy=MlpPolicy)
+        else:
+            explorer.init_model(env="MontezumaRevengeDeterministic-v4", policy=CnnPolicy)
     elif explorer == 'repeated':
         explorer = RepeatedRandomExplorer(mean_repeat)
     else:
@@ -112,20 +118,37 @@ def _run(resolution, score_objects, mean_repeat=20,
             GridDimension('level', 1), GridDimension('score', 1), GridDimension('room', 1),
             GridDimension('x', resolution), GridDimension('y', resolution)
         )
+    elif game == "nchain":
+        game_class = MyNChain
+        game_class.TARGET_SHAPE = target_shape
+        game_class.MAX_PIX_VALUE = max_pix_value
+        game_args = dict(N=10000)
+        grid_resolution = (GridDimension('state', 1),)
     else:
         raise NotImplementedError("Unknown game: " + game)
 
 
+    if game != "nchain":
+        selector = WeightedSelector(game_class,
+                                    seen=Weight(seen_weight, seen_power),
+                                    chosen=Weight(chosen_weight, chosen_power),
+                                    action=Weight(action_weight, action_power),
+                                    room_cells=Weight(0.0),
+                                    dir_weights=DirWeights(horiz_weight, vert_weight, low_score_weight, high_score_weight),
+                                    chosen_since_new_weight=Weight(chosen_since_new_weight, chosen_since_new_power),
+                                    low_level_weight=low_level_weight
+                                    )
+    else:
+        selector = NChainSelector(game_class,
+                                    seen=Weight(seen_weight, seen_power),
+                                    chosen=Weight(chosen_weight, chosen_power),
+                                    action=Weight(action_weight, action_power),
+                                    room_cells=Weight(0.0),
+                                    dir_weights=DirWeights(horiz_weight, vert_weight, low_score_weight, high_score_weight),
+                                    chosen_since_new_weight=Weight(chosen_since_new_weight, chosen_since_new_power),
+                                    low_level_weight=low_level_weight
+                                  )
 
-    selector = WeightedSelector(game_class,
-                                seen=Weight(seen_weight, seen_power),
-                                chosen=Weight(chosen_weight, chosen_power),
-                                action=Weight(action_weight, action_power),
-                                room_cells=Weight(0.0),
-                                dir_weights=DirWeights(horiz_weight, vert_weight, low_score_weight, high_score_weight),
-                                chosen_since_new_weight=Weight(chosen_since_new_weight, chosen_since_new_power),
-                                low_level_weight=low_level_weight
-    )
 
     pool_cls = multiprocessing.get_context(start_method).Pool
     if pool_class == 'torch':
@@ -181,7 +204,7 @@ def _run(resolution, score_objects, mean_repeat=20,
                 return False
             return True
 
-        logDir = f'{log_path}/{explorer.__repr__()}/res_{resolution}_explStep_{explore_steps}'f'_cellbatch_{batch_size}'
+        logDir = f'{log_path}/{game}_{explorer.__repr__()}/res_{resolution}_explStep_{explore_steps}'f'_cellbatch_{batch_size}'
         if explorer.__repr__() == 'ppo':
             logDir = f'{logDir}_actors_{actors}_exp_{nexp}_lr_{lr}_lrDec_{lr_decay}_cl_{cliprange}_clDec_{cl_decay}' \
                 f'_mbatch_{mbatch}_trainEpochs_{n_tr_epochs}_gamma_{gamma}_lam_{lam}'
@@ -406,7 +429,7 @@ if __name__ == '__main__':
     parser.add_argument('--keep_item_pictures', '--kip', dest='keep_item_pictures', action='store_true',
                         help='Keep old pictures showing items collected.')
     parser.add_argument('--no_warn_delete', dest='warn_delete', action='store_false', help='Do not warn before deleting the existing directory, if any.')
-    parser.add_argument('--game', '-g', type=str, default='montezuma', help='Determines the game to which apply goexplore.')
+    parser.add_argument('--game', '-g', type=str, default='nchain', help='Determines the game to which apply goexplore.')
 
     parser.add_argument('--objects_from_ram', dest='objects_from_pixels', action='store_false', help='Get the objects from RAM instead of pixels.')
     parser.add_argument('--all_objects', dest='only_keys', action='store_false', help='Use all objects in the state instead of just the keys')

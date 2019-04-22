@@ -8,6 +8,16 @@ import gym
 from baselines.ppo2 import ppo2, policies
 from baselines.common.atari_wrappers import *
 
+class strechedObSpaceWrapper(gym.ObservationWrapper):
+	def __init__(self, env):
+		gym.ObservationWrapper.__init__(self, env)
+		self.n =env.unwrapped.n
+		self.observation_space = spaces.MultiBinary(self.n)
+
+	def observation(self, observation):
+		res = np.zeros(self.n)
+		res[observation] = 1
+		return res
 
 class PPOExplorer:
 	def __init__(self, env,  nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1, gamma=0.99, lam=0.95, nenvs=1, policy=policies.CnnPolicy):
@@ -295,8 +305,15 @@ class PPOExplorer_v3:
 		self.env = None
 
 	def init_model(self, env, policy=policies.CnnPolicy):
-		self.env = gym.make('MontezumaRevengeDeterministic-v4')
-		self.env = ClipRewardEnv(FrameStack(WarpFrame(self.env), 4))
+		self.env = gym.make(env)
+		if self.env.__repr__() != '<TimeLimit<NChainEnv<NChain-v0>>>':
+			self.env = ClipRewardEnv(FrameStack(WarpFrame(self.env), 4))
+		else:
+			self.env.unwrapped.n = 10000  #if nchain environment set N to 10 000
+			self.env = strechedObSpaceWrapper(self.env)
+			#TODO Should not be hardcoded
+			self.env.unwrapped.slip = 0
+
 		ob_space = self.env.observation_space
 		ac_space = self.env.action_space
 		self.model = ppo2.Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
@@ -325,7 +342,7 @@ class PPOExplorer_v3:
 
 		self.exp += 1
 
-		self.obs[:], reward, self.done, _ = self.env.step(self.mb_actions[self.actor][-1])
+		self.obs[:], reward, self.done, _ = self.env.step(self.mb_actions[self.actor][-1].squeeze())
 		reward += e
 		self.mb_rewards[self.actor].append(reward)
 
