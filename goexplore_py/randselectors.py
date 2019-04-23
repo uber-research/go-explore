@@ -270,7 +270,7 @@ class NChainSelector:
     def choose_cell(self, known_cells, size=1):
         to_choose = list(known_cells.keys())
 
-        return [to_choose[np.argmax(e.state for e in to_choose)]] * size
+        return [to_choose[np.argmax(list(e.state for e in to_choose))]] * size
         # self.set_ranges(to_choose)
         # if len(to_choose) == 1:
         #     return [to_choose[0]] * size
