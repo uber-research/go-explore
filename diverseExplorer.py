@@ -309,6 +309,7 @@ class PPOExplorer_v3:
 		if self.env.__repr__() != '<TimeLimit<NChainEnv<NChain-v0>>>':
 			self.env = ClipRewardEnv(FrameStack(WarpFrame(self.env), 4))
 		else:
+			self.env = self.env.unwrapped
 			self.env.unwrapped.n = 10000  #if nchain environment set N to 10 000
 			self.env = strechedObSpaceWrapper(self.env)
 			#TODO Should not be hardcoded
@@ -329,10 +330,14 @@ class PPOExplorer_v3:
 	def init_trajectory(self, start_cell=None, grid=None):
 
 		if start_cell.restore is not None:
-			(full_state, state, score, steps, pos, room_time, ram_death_state,_, _) = start_cell.restore
-			self.env.unwrapped.restore_full_state(full_state)
-			for i in range(3):
-				self.env.step(0) #perform 3(4) nop to fill FrameStack
+			if self.env.unwrapped.spec._env_name != "NChain":
+				(full_state, state, score, steps, pos, room_time, ram_death_state,_, _) = start_cell.restore
+				self.env.unwrapped.restore_full_state(full_state)
+				for i in range(3): #TODO this puts the env out of sync
+					self.env.step(0) #perform 3(4) nop to fill FrameStack
+			else:
+				state, _, _, _ = start_cell.restore
+				self.env.unwrapped.state = state
 			self.obs[:], _ , self.done, _ = self.env.step(0)
 		else:
 			self.obs[:] = self.env.reset()
@@ -343,8 +348,8 @@ class PPOExplorer_v3:
 		self.exp += 1
 
 		self.obs[:], reward, self.done, _ = self.env.step(self.mb_actions[self.actor][-1].squeeze())
-		reward += e
-		self.mb_rewards[self.actor].append(reward)
+
+		self.mb_rewards[self.actor].append(e)
 
 
 		if self.exp >= self.nsteps:

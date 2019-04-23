@@ -232,10 +232,10 @@ class Explore:
             if explorer.__repr__() == "ppo":
 
                 if not trajectory[-1].done and trajectory[-1].to.cell not in GRID:
-                    explorer.seen_state(1 + trajectory[-1].reward)
+                    explorer.seen_state(1)
                     self.IR += 1
                 else:
-                    explorer.seen_state(0 + trajectory[-1].reward)
+                    explorer.seen_state(0)
 
             else:
                 explorer.seen_state(trajectory[-1])

@@ -232,20 +232,21 @@ def _run(resolution, score_objects, mean_repeat=20,
             entry = [summary.Summary.Value(tag='Rooms_Found', simple_value=len(get_env().rooms))]
             entry.append(summary.Summary.Value(tag='Cells', simple_value=len(expl.grid)))
             entry.append(summary.Summary.Value(tag='Top_score', simple_value=max(e.score for e in expl.grid.values())))
-            dist = Counter(e.score for e in expl.real_grid)
-            for key in dist.keys():
-                if key not in keys_found:
-                    keys_found.append(key)
-            hist = makeHistProto(dist, bins=30, keys=keys_found)
-            leveldist = Counter(e.level for e in expl.real_grid)
-            histlvl = makeHistProto(leveldist, bins=5)
-            entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
-            entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
+            if game != "nchain":
+                dist = Counter(e.score for e in expl.real_grid)
+                for key in dist.keys():
+                    if key not in keys_found:
+                        keys_found.append(key)
+                hist = makeHistProto(dist, bins=30, keys=keys_found)
+                leveldist = Counter(e.level for e in expl.real_grid)
+                histlvl = makeHistProto(leveldist, bins=5)
+                entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
+                entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
             entry.append(summary.Summary.Value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
 
             entry.extend(expl.summary)
-            expl.summary = []
             summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
+            expl.summary = []
 
             # In some circumstances (see comments), save a checkpoint and some pictures
             if ((not seen_level_1 and expl.seen_level_1) or  # We have solved level 1

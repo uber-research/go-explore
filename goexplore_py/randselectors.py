@@ -203,6 +203,7 @@ class NChainSelector:
         self.action: Weight = action
         self.low_level_weight: float = low_level_weight
         self.game = game
+        self.max_level = 0
 
     def reached_state(self, elem):
         pass

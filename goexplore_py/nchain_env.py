@@ -2,10 +2,12 @@
 import gym
 
 class NChainPos:
-	__slots__ = ['state', 'tuple']
+	__slots__ = ['state', 'level', 'score', 'tuple']
 
 	def __init__(self, state):
 		self.state = state
+		self.level = 0
+		self.score = 0
 
 		self.set_tuple()
 
@@ -33,7 +35,8 @@ class NChainPos:
 class MyNChain:
 	def __init__(self, N):
 		self.env = gym.make("NChain-v0")
-		self.env.env.n = N
+		self.env = self.env.unwrapped
+		self.env.unwrapped.n = N
 		self.env.unwrapped.slip = 0
 		self.state = None
 		self.pos = None
@@ -64,7 +67,7 @@ class MyNChain:
 
 	def restore(self, data):
 		self.state, self.pos, self.cur_steps, self.cur_score = data
-		self.env.env.state = self.state
+		self.env.unwrapped.state = self.state
 		return self.state
 
 	@staticmethod
