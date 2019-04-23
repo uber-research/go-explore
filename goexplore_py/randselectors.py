@@ -269,21 +269,23 @@ class NChainSelector:
 
     def choose_cell(self, known_cells, size=1):
         to_choose = list(known_cells.keys())
-        self.set_ranges(to_choose)
-        if len(to_choose) == 1:
-            return [to_choose[0]] * size
-        weights = [
-            self.get_weight(
-                k, known_cells[k], known_cells)
-            for k in to_choose
-        ]
-        total = np.sum(weights)
-        idxs = np.random.choice(
-            list(range(len(to_choose))),
-            size=size,
-            p=[w / total for w in weights]
-        )
-        return [to_choose[i] for i in idxs]
+
+        return [to_choose[np.argmax(e.state for e in to_choose)]] * size
+        # self.set_ranges(to_choose)
+        # if len(to_choose) == 1:
+        #     return [to_choose[0]] * size
+        # weights = [
+        #     self.get_weight(
+        #         k, known_cells[k], known_cells)
+        #     for k in to_choose
+        # ]
+        # total = np.sum(weights)
+        # idxs = np.random.choice(
+        #     list(range(len(to_choose))),
+        #     size=size,
+        #     p=[w / total for w in weights]
+        # )
+        # return [to_choose[i] for i in idxs]
 
     def __repr__(self):
         return f'weight-seen-{self.seen}-chosen-{self.chosen}-chosen-since-new-{self.chosen_since_new_weight}-action-{self.action}-room-{self.room_cells}-dir-{self.dir_weights}'
