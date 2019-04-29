@@ -194,7 +194,7 @@ class WeightedSelector:
 class NChainSelector:
     def __init__(self, game, seen=Weight(0.1), chosen=Weight(), action=Weight(0.1, power=0.5),
                  room_cells=Weight(0.0, power=0.5), dir_weights=DirWeights(), low_level_weight=0.0,
-                 chosen_since_new_weight=Weight()):
+                 chosen_since_new_weight=Weight(), with_domain=False ):
         self.seen: Weight = seen
         self.chosen: Weight = chosen
         self.chosen_since_new_weight: Weight = chosen_since_new_weight
@@ -204,6 +204,7 @@ class NChainSelector:
         self.low_level_weight: float = low_level_weight
         self.game = game
         self.max_level = 0
+        self.with_domain =with_domain
 
     def reached_state(self, elem):
         pass
@@ -239,12 +240,10 @@ class NChainSelector:
 
         neigh_horiz = 0.0
         if self.dir_weights.horiz:
-            neigh_horiz = (self.no_neighbor(pos, (-1, 0), known_cells) + self.no_neighbor(pos, (1, 0), known_cells))
-        neigh_vert = 0.0
-        if self.dir_weights.vert:
-            neigh_vert = (self.no_neighbor(pos, (0, -1), known_cells) + self.no_neighbor(pos, (0, 1), known_cells))
+            neigh_horiz = (self.no_neighbor(pos, (1, 0), known_cells))
 
-        res = self.dir_weights.horiz * neigh_horiz + self.dir_weights.vert * neigh_vert + 1
+
+        res = self.dir_weights.horiz * neigh_horiz + 1
         return res
 
     def get_weight(self, cell_key, cell, known_cells):
@@ -269,23 +268,23 @@ class NChainSelector:
 
     def choose_cell(self, known_cells, size=1):
         to_choose = list(known_cells.keys())
-
-        return [to_choose[np.argmax(list(e.state for e in to_choose))]] * size
-        # self.set_ranges(to_choose)
-        # if len(to_choose) == 1:
-        #     return [to_choose[0]] * size
-        # weights = [
-        #     self.get_weight(
-        #         k, known_cells[k], known_cells)
-        #     for k in to_choose
-        # ]
-        # total = np.sum(weights)
-        # idxs = np.random.choice(
-        #     list(range(len(to_choose))),
-        #     size=size,
-        #     p=[w / total for w in weights]
-        # )
-        # return [to_choose[i] for i in idxs]
+        if self.with_domain:
+            return [to_choose[np.argmax(list(e.state for e in to_choose))]] * size
+        self.set_ranges(to_choose)
+        if len(to_choose) == 1:
+            return [to_choose[0]] * size
+        weights = [
+            self.get_weight(
+                k, known_cells[k], known_cells)
+            for k in to_choose
+        ]
+        total = np.sum(weights)
+        idxs = np.random.choice(
+            list(range(len(to_choose))),
+            size=size,
+            p=[w / total for w in weights]
+        )
+        return [to_choose[i] for i in idxs]
 
     def __repr__(self):
         return f'weight-seen-{self.seen}-chosen-{self.chosen}-chosen-since-new-{self.chosen_since_new_weight}-action-{self.action}-room-{self.room_cells}-dir-{self.dir_weights}'

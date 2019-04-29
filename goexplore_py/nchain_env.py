@@ -45,6 +45,9 @@ class MyNChain:
 		self.rooms = []
 		self.level = 0
 
+	def __getattr__(self, e):
+		return getattr(self.env, e)
+
 	def reset(self):
 		self.state = self.env.reset()
 		self.cur_steps = 0

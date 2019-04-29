@@ -8,5 +8,6 @@
     --max_hours=1 \
     --max_compute_steps=1000000 \
     --explorer='repeated' \
-    --log_path='log/Simple_environment'
+    --log_path='log/Simple_environment' \
+    --state_is_pixels
 

@@ -7,6 +7,7 @@
     --explore_steps=100 \
     --max_hours=1 \
     --max_compute_steps=1000000 \
-    --explorer='repeated' \
-    --log_path='log/Simple_environment'
+    --expl='ppo' \
+    --log_path='log/Simple_environment' \
+
 

@@ -146,7 +146,7 @@ def _run(resolution, score_objects, mean_repeat=20,
                                     room_cells=Weight(0.0),
                                     dir_weights=DirWeights(horiz_weight, vert_weight, low_score_weight, high_score_weight),
                                     chosen_since_new_weight=Weight(chosen_since_new_weight, chosen_since_new_power),
-                                    low_level_weight=low_level_weight
+                                    low_level_weight=low_level_weight, with_domain=use_real_pos
                                   )
 
 
