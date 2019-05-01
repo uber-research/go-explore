@@ -17,7 +17,7 @@ def nature_cnn(unscaled_images):
     return activ(fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2)))
 
 class LnLstmPolicy(object):
-    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, nlstm=256, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, nlstm=256, reuse=False, name='model'):
         nenv = nbatch // nsteps
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc)
@@ -25,7 +25,7 @@ class LnLstmPolicy(object):
         X = tf.placeholder(tf.uint8, ob_shape) #obs
         M = tf.placeholder(tf.float32, [nbatch]) #mask (done t-1)
         S = tf.placeholder(tf.float32, [nenv, nlstm*2]) #states
-        with tf.variable_scope("model", reuse=reuse):
+        with tf.variable_scope(name, reuse=reuse):
             h = nature_cnn(X)
             xs = batch_to_seq(h, nenv, nsteps)
             ms = batch_to_seq(M, nenv, nsteps)
@@ -58,7 +58,7 @@ class LnLstmPolicy(object):
 
 class LstmPolicy(object):
 
-    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, nlstm=256, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, nlstm=256, reuse=False, name='model'):
         nenv = nbatch // nsteps
 
         nh, nw, nc = ob_space.shape
@@ -67,7 +67,7 @@ class LstmPolicy(object):
         X = tf.placeholder(tf.uint8, ob_shape) #obs
         M = tf.placeholder(tf.float32, [nbatch]) #mask (done t-1)
         S = tf.placeholder(tf.float32, [nenv, nlstm*2]) #states
-        with tf.variable_scope("model", reuse=reuse):
+        with tf.variable_scope(name, reuse=reuse):
             h = nature_cnn(X)
             xs = batch_to_seq(h, nenv, nsteps)
             ms = batch_to_seq(M, nenv, nsteps)
@@ -100,24 +100,24 @@ class LstmPolicy(object):
 
 class CnnPolicy(object):
 
-    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, name='CnnPolicy'): #pylint: disable=W0613
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, name='model'): #pylint: disable=W0613
 
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc)
         nact = ac_space.n
-        with tf.name_scope(name):
-            X = tf.placeholder(tf.uint8, ob_shape) #obs
-            with tf.variable_scope("model", reuse=reuse):
-                h = nature_cnn(X)
-                pi = fc(h, 'pi', nact, init_scale=0.01)
-                vf = fc(h, 'v', 1)[:,0]
 
-            self.pdtype = make_pdtype(ac_space)
-            self.pd = self.pdtype.pdfromflat(pi)
+        X = tf.placeholder(tf.uint8, ob_shape) #obs
+        with tf.variable_scope(name, reuse=reuse):
+            h = nature_cnn(X)
+            pi = fc(h, 'pi', nact, init_scale=0.01)
+            vf = fc(h, 'v', 1)[:,0]
 
-            a0 = self.pd.sample()
-            neglogp0 = self.pd.neglogp(a0)
-            self.initial_state = None
+        self.pdtype = make_pdtype(ac_space)
+        self.pd = self.pdtype.pdfromflat(pi)
+
+        a0 = self.pd.sample()
+        neglogp0 = self.pd.neglogp(a0)
+        self.initial_state = None
 
         def step(ob, *_args, **_kwargs):
             a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob})
@@ -133,11 +133,11 @@ class CnnPolicy(object):
         self.value = value
 
 class MlpPolicy(object):
-    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False): #pylint: disable=W0613
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, name='model'): #pylint: disable=W0613
         ob_shape = (nbatch,) + ob_space.shape
         actdim = ac_space.n #.shape[0]
         X = tf.placeholder(tf.float32, ob_shape, name='Ob') #obs
-        with tf.variable_scope("model", reuse=reuse):
+        with tf.variable_scope(name, reuse=reuse):
             activ = tf.tanh
             h1 = activ(fc(X, 'pi_fc1', nh=64, init_scale=np.sqrt(2)))
             h2 = activ(fc(h1, 'pi_fc2', nh=64, init_scale=np.sqrt(2)))
@@ -170,6 +170,13 @@ class MlpPolicy(object):
         self.step = step
         self.value = value
 
-# class FcPolicy(object):
-#     def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False):
+# class MlshPolicy(object):
+#     def __init__(self, sess, masterPolicy, subPolicy, nsub, ob_space, ac_space, nbatch, nsteps, reuse=False, name='MlshPolicy'):
+#         self.master = masterPolicy(sess, ob_space, ac_space.__class__(nsub), nbatch, nsteps, reuse, name='Master')
+#         self.sub = [subPolicy(sess, ob_space, ac_space, nbatch, nsteps, reuse, name=f'Sub{i}') for i in range(nsub)]
 #
+#         mA = self.master.pd.sample()
+#
+#         sA =
+#
+#     def step(self, ob):

@@ -70,13 +70,14 @@ class PosInfo:
 
 @dataclass
 class TrajectoryElement:
-    __slots__ = ['from_', 'to', 'action', 'reward', 'done', 'real_pos']
+    __slots__ = ['from_', 'to', 'action', 'reward', 'done', 'real_pos', 'obs']
     from_: PosInfo
     to: PosInfo
     action: int
     reward: float
     done: bool
     real_pos: MontezumaPosLevel
+    obs: typing.Any
 
 
 
@@ -225,17 +226,21 @@ class Explore:
                     initial_pos_info,
                     self.get_pos_info(),
                     action, reward, done,
-                    self.get_real_cell()
+                    self.get_real_cell(), None
                 )
             )
             #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
             if explorer.__repr__() == "ppo":
-
+                e = {'done':done}
+                if (max_steps > 0 and len(trajectory) >= max_steps):
+                    e['done'] = 1
                 if not trajectory[-1].done and trajectory[-1].to.cell not in GRID:
-                    explorer.seen_state(1)
+                    e['reward'] = 1
+                    explorer.seen_state(e)
                     self.IR += 1
                 else:
-                    explorer.seen_state(0)
+                    e['reward'] = 0
+                    explorer.seen_state(e)
 
             else:
                 explorer.seen_state(trajectory[-1])
