@@ -112,7 +112,8 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 			score_objects=score_objects, x_repeat=x_repeat,
 			objects_from_pixels=objects_from_pixels,
 			objects_remember_rooms=objects_remember_rooms,
-			only_keys=only_keys
+			only_keys=only_keys,
+			unprocessed_state=True
 		)
 		grid_resolution = (
 			GridDimension('level', 1), GridDimension('score', 1), GridDimension('room', 1),
@@ -401,7 +402,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 
 	parser.add_argument('--resolution', '--res', type=float, default=16, help='Length of the side of a grid cell.')
-	parser.add_argument('--explorer', '--expl', type=str, default='repeated',
+	parser.add_argument('--explorer', '--expl', type=str, default='ppo',
 						help='The explorer to use when searching for solution')
 	parser.add_argument('--use_scores', dest='use_objects', action='store_false', help='Use scores in the cell description. Otherwise objects will be used.')
 	parser.add_argument('--repeat_action', '--ra', type=int, default=20, help='The average number of times that actions will be repeated in the exploration phase.')
@@ -491,6 +492,7 @@ if __name__ == '__main__':
 	MAX_TIME = args.max_hours * 3600
 	MAX_ITERATIONS = args.max_iterations
 	MAX_LEVEL = args.max_level
+	TERM_CONDITION = args.test_run
 
 	if args.profile:
 		PROFILER = cProfile.Profile()
