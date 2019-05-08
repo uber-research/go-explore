@@ -35,9 +35,32 @@ MAX_LEVEL = None
 
 PROFILER = None
 
-test_dict = {'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1], 'nexp':[2000], 'batch_size':[1]}
+LOG_DIR = None
+
+test_dict = {'log_path': ["log/gridsearch"], 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
+			 'nexp':[100, 1000, 2000], 'batch_size':[100], 'resolution': [16],
+		'lr': [1.0e-03], 'lr_decay':[ 1],
+		'cliprange':[0.1], 'cl_decay': [ 1],
+		'n_tr_epochs':[2],
+		'mbatch': [4],
+		'gamma':[0.99], 'lam':[0.95],
+		'nsubs' : [8],
+		'timedialation': [20],
+		'master_lr': [0.01,  0.04, 0.001],
+		'lr_decay_master': [1],
+		'master_cl': [0.1],
+		'cl_decay_master' :[1],
+		'warmup': [ 10, 20, 40],
+		'train': [ 20, 40, 80]}
 TERM_CONDITION = True
 NSAMPLES = 4
+
+
+
+
+
+
+
 
 
 def _run(resolution=16, score_objects=True, mean_repeat=20,
@@ -82,9 +105,8 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		 master_cl = 0.1,
 		 cl_decay_master =0.99999,
 		 warmup= 20,
-		 train = 40
-
-
+		 train = 40,
+		 retrain_N = None
 
 
 		 ):
@@ -123,7 +145,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		explorer = MlshExplorer(nsubs=nsubs, timedialation=timedialation, warmup_T=nexp*warmup, train_T=nexp*train,
 								actors=actors, nexp=nexp//timedialation, lr_mas=master_lr, lr_sub=lr, lr_decay=lr_decay_master,
 								lr_decay_sub=lr_decay, cl_decay=cl_decay_master, cl_decay_sub=cl_decay, n_tr_epochs=n_tr_epochs,
-								nminibatches=mbatch, gamma=gamma, lam=lam, cliprange_mas=master_cl, cliprange_sub=cliprange)
+								nminibatches=mbatch, gamma=gamma, lam=lam, cliprange_mas=master_cl, cliprange_sub=cliprange, retrain_N=retrain_N)
 
 
 
@@ -249,7 +271,15 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		if explorer.__repr__() == 'ppo':
 			logDir = f'{logDir}_actors_{actors}_exp_{nexp}_lr_{lr}_lrDec_{lr_decay}_cl_{cliprange}_clDec_{cl_decay}' \
 				f'_mbatch_{mbatch}_trainEpochs_{n_tr_epochs}_gamma_{gamma}_lam_{lam}'
+		if  explorer.__repr__() == 'mlsh':
+			logDir = f'{logDir}_subs_{nsubs}_timeadialation_{timedialation}_warmUp_{warmup}_jointrain_{train}_exp_{nexp}' \
+				f'_lrMas_{master_lr}_lrDecMas_{lr_decay_master}_clMas_{master_cl}' \
+				f'_clDecMas_{cl_decay_master}_lrSub_{lr}_lrDecSub_{lr_decay}_clSub_{cliprange}_clDecSub_{cl_decay}' \
+				f'_retrain_{retrain_N}' \
+				f'_mbatch_{mbatch}_trainEpochs_{n_tr_epochs}_gamma_{gamma}_lam_{lam}'
 		logDir = f'{logDir}_{time.time()}'
+		global LOG_DIR
+		LOG_DIR= logDir
 		summaryWriter = summary.FileWriter(logdir=logDir, flush_secs=20)
 		keys_found = []
 
@@ -422,6 +452,9 @@ def run(base_path, **kwargs):
 	print('Experiment running in', base_path)
 
 	_run(base_path=base_path, **kwargs)
+	if LOG_DIR is not None:
+		json.dump(info, open(LOG_DIR + '/kwargs.json', 'w'))
+
 
 if __name__ == '__main__':
 	if platform == "darwin":

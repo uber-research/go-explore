@@ -126,7 +126,7 @@ class Explore:
         self.explore_steps = explore_steps
         self.explorer = explorer_policy
 
-        if self.explorer.__repr__() == 'ppo':
+        if self.explorer.__repr__() == 'mlsh':
             if isinstance(get_env().observation_space, gym.spaces.Box):
                 self.explorer.init_model(get_env(), masterPolicy=goexplore_py.policies.CnnPolicy, subPolicies=goexplore_py.policies.CnnPolicy)
             elif isinstance(get_env().observation_space, gym.spaces.MultiBinary):
@@ -240,7 +240,7 @@ class Explore:
                 )
             )
             #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
-            if explorer.__repr__() == "ppo":
+            if explorer.__repr__() == "mlsh":
                 e = {'done': done, 'observation': self.state}
                 # if (max_steps > 0 and len(trajectory) >= max_steps):
                 #     e['done'] = 1

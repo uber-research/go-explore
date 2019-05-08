@@ -725,7 +725,7 @@ class MlshExplorer:
 
 
 	def __repr__(self):
-		return 'ppo'
+		return 'mlsh'
 
 
 class PPOSub:
