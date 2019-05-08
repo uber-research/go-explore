@@ -95,10 +95,10 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		explorer = PPOExplorer(actors=actors, nexp=nexp, lr=lr, lr_decay=lr_decay,
 							   cliprange=cliprange, cl_decay=cl_decay, n_tr_epochs=n_tr_epochs,
 							   nminibatches=mbatch, gamma=gamma, lam=lam)
-		if game == 'nchain':
-			explorer.init_model(env="NChain-v0", policy=MlpPolicy)
-		else:
-			explorer.init_model(env="MontezumaRevengeDeterministic-v4", policy=CnnPolicy)
+		# if game == 'nchain':
+		# 	explorer.init_model(env="NChain-v0", policy=MlpPolicy)
+		# else:
+		# 	explorer.init_model(env="MontezumaRevengeDeterministic-v4", policy=CnnPolicy)
 	elif explorer == 'repeated':
 		explorer = RepeatedRandomExplorer(mean_repeat)
 	else:

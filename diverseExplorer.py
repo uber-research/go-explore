@@ -275,7 +275,7 @@ class PPOExplorer_v2:
 		return 'ppo'
 
 class PPOExplorer_v3:
-	def __init__(self, actors,  nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1, gamma=0.99, lam=0.95, name='model'):
+	def __init__(self, actors,  nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1, gamma=0.99, lam=0.95, name='model', nframes=4):
 
 
 		self.nacts = actors
@@ -294,6 +294,7 @@ class PPOExplorer_v3:
 		self.done = [False for _ in range(1)]
 		self.gamma = gamma
 		self.lam = lam
+		self.nframes = nframes
 
 
 
@@ -302,23 +303,24 @@ class PPOExplorer_v3:
 		self.model = None
 
 		self.obs = None
-		self.env = None
+		#self.env = None
 
 		self.name = name
 
 	def init_model(self, env, policy=policies.CnnPolicy):
-		self.env = gym.make(env)
-		if self.env.__repr__() != '<TimeLimit<NChainEnv<NChain-v0>>>':
-			self.env = ClipRewardEnv(FrameStack(WarpFrame(self.env), 4))
-		else:
-			self.env = self.env.unwrapped
-			self.env.unwrapped.n = 10000  #if nchain environment set N to 10 000
-			self.env = strechedObSpaceWrapper(self.env)
-			#TODO Should not be hardcoded
-			self.env.unwrapped.slip = 0
+		# self.env = gym.make(env)
+		# if self.env.__repr__() != '<TimeLimit<NChainEnv<NChain-v0>>>':
+		# 	self.env = ClipRewardEnv(FrameStack(WarpFrame(self.env), 4))
+		# else:
+		# 	self.env = self.env.unwrapped
+		# 	self.env.unwrapped.n = 10000  #if nchain environment set N to 10 000
+		# 	self.env = strechedObSpaceWrapper(self.env)
+		# 	#TODO Should not be hardcoded
+		# 	self.env.unwrapped.slip = 0
 
-		ob_space = self.env.observation_space
-		ac_space = self.env.action_space
+
+		ob_space = env.observation_space
+		ac_space = env.action_space
 		self.model = ppo2.Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
 								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
 								max_grad_norm=0.5, name=self.name)
@@ -329,28 +331,31 @@ class PPOExplorer_v3:
 		# self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs = [],[],[],[],[],[]
 		pass
 
-	def init_trajectory(self, start_cell=None, grid=None):
+	def init_trajectory(self, obs, arg2):
 
-		if start_cell.restore is not None:
-			if self.env.unwrapped.spec._env_name != "NChain":
-				(full_state, state, score, steps, pos, room_time, ram_death_state,_, _) = start_cell.restore
-				self.env.unwrapped.restore_full_state(full_state)
-				for i in range(3): #TODO this puts the env out of sync
-					self.env.step(0) #perform 3(4) nop to fill FrameStack
-			else:
-				state, _, _, _ = start_cell.restore
-				self.env.unwrapped.state = state
-			self.obs[:], _ , self.done, _ = self.env.step(0)
-		else:
-			self.obs[:] = self.env.reset()
-			self.done = [False]
+		# if start_cell.restore is not None:
+		# 	if self.env.unwrapped.spec._env_name != "NChain":
+		# 		(full_state, state, score, steps, pos, room_time, ram_death_state,_, _) = start_cell.restore
+		# 		self.env.unwrapped.restore_full_state(full_state)
+		# 		for i in range(3): #TODO this puts the env out of sync
+		# 			self.env.step(0) #perform 3(4) nop to fill FrameStack
+		# 	else:
+		# 		state, _, _, _ = start_cell.restore
+		# 		self.env.unwrapped.state = state
+		# 	self.obs[:], _ , self.done, _ = self.env.step(0)
+		# else:
+		# 	self.obs[:] = self.env.reset()
+		# 	self.done = [False]
+		self.obs[:] = obs
+		self.done = True # Delayed done flag to seperate from the previous episode which may not have ended in death
 
 	def seen_state(self, e):
 
 		self.exp += 1
 
-		self.obs[:], reward, self.done, _ = self.env.step(self.mb_actions[self.actor][-1].squeeze())
+		#self.obs[:], reward, self.done, _ = self.env.step(self.mb_actions[self.actor][-1].squeeze())
 
+		self.obs[:] = e['observation']
 		self.mb_rewards[self.actor].append(e['reward'])
 		self.done += e['done']
 

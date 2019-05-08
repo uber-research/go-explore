@@ -92,7 +92,7 @@ def clip(a, m, M):
 class MyMontezuma:
     def __init__(self, check_death: bool = True, unprocessed_state: bool = False, score_objects: bool = False,
                  x_repeat=2, objects_from_pixels=True, objects_remember_rooms=False, only_keys=False):  # TODO: version that also considers the room objects were found in
-        self.env = gym.make('MontezumaRevengeDeterministic-v4')
+        self.env = FrameStack(WarpFrame(gym.make('MontezumaRevengeDeterministic-v4')), 4)
         self.env.reset()
         self.score_objects = score_objects
         self.ram = None
@@ -117,11 +117,13 @@ class MyMontezuma:
         return getattr(self.env, e)
 
     def reset(self) -> np.ndarray:
-        unprocessed_state = self.env.reset()
+        observation= self.env.reset()
+        unprocessed_state = self.env.unwrapped._get_obs()
         self.cur_lives = 5
         self.state = [convert_state(unprocessed_state)]
         for _ in range(3):
-            unprocessed_state = self.env.step(0)[0]
+            observation = self.env.step(0)[0]
+            unprocessed_state = self.env.unwrapped._get_obs()
             self.state.append(convert_state(unprocessed_state))
         self.ram = self.env.unwrapped.ale.getRAM()
         self.cur_score = 0
@@ -133,7 +135,7 @@ class MyMontezuma:
             self.rooms[self.get_pos().room] = (False, unprocessed_state[50:].repeat(self.x_repeat, axis=1))
         self.room_time = (self.get_pos().room, 0)
         if self.unprocessed_state:
-            return unprocessed_state
+            return observation
 
         return copy.copy(self.state)
 
@@ -259,7 +261,15 @@ class MyMontezuma:
         self.room_time = room_time
         self.ram_death_state = ram_death_state
 
-        return copy.copy(self.state)
+        if self.unprocessed_state:
+            self.env.step(0) # take noop to update screen, this is not optimal solution
+            obs = self.env.env.observation(self.env.unwrapped._get_obs())
+            for _ in range(self.env.k):
+                self.env.frames.append(obs) # fill the frame stack
+            obs = self.env._get_ob() #get new obs
+        else:
+            obs = copy.copy(self.state)
+        return obs
 
     def is_transition_screen(self, unprocessed_state):
         unprocessed_state = unprocessed_state[50:, :, :]
@@ -302,7 +312,8 @@ class MyMontezuma:
         return self.ram[55] != 0 or self.ram[58] < self.cur_lives
 
     def step(self, action) -> typing.Tuple[np.ndarray, float, bool, dict]:
-        unprocessed_state, reward, done, lol = self.env.step(action)
+        observation, reward, done, lol = self.env.step(action)
+        unprocessed_state = self.env.unwrapped._get_obs()
         self.state.append(convert_state(unprocessed_state))
         self.state.pop(0)
         self.ram = self.env.unwrapped.ale.getRAM()
@@ -353,7 +364,7 @@ class MyMontezuma:
                 unprocessed_state[50:].repeat(self.x_repeat, axis=1)
             )
         if self.unprocessed_state:
-            return unprocessed_state, reward, done, lol
+            return observation, reward, done, lol
         return copy.copy(self.state), reward, done, lol
 
     def get_pos(self):

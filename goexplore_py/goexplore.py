@@ -9,6 +9,7 @@
 
 from .explorers import *
 from diverseExplorer import PPOExplorer_v3 as PPOExplorer
+import goexplore_py.policies
 from .montezuma_env import *
 from .utils import *
 import loky
@@ -111,6 +112,8 @@ class Explore:
         self.env_info = env
         self.make_env()
 
+
+
         self.pool_class = pool_class
         self.reset_pool = reset_pool
         if self.reset_pool:
@@ -123,6 +126,14 @@ class Explore:
         self.batch_size = batch_size
         self.explore_steps = explore_steps
         self.explorer = explorer_policy
+
+        if self.explorer.__repr__() == 'ppo':
+            if isinstance(get_env().observation_space, gym.spaces.Box):
+                self.explorer.init_model(get_env(), policy=goexplore_py.policies.CnnPolicy)
+            elif isinstance(get_env().observation_space, gym.spaces.Discrete):
+                self.explorer.init_model(get_env(), policy=goexplore_py.policies.MlpPolicy)
+            else:
+                raise Exception("Unkown observation space")
 
         self.selector = cell_selector
         self.grid_info = grid_info
@@ -207,7 +218,7 @@ class Explore:
 
     def run_explorer(self, explorer, start_cell=None, max_steps=-1):
         global GRID
-        explorer.init_trajectory(start_cell, self.grid)
+        explorer.init_trajectory(self.state, None)
         trajectory = []
         while True:
             initial_pos_info = self.get_pos_info(include_restore=False)
@@ -215,7 +226,7 @@ class Explore:
                     initial_pos_info.cell == start_cell):
                 break
 
-            action = explorer.get_action(self.state, ENV)
+            action = explorer.get_action(self.state, ENV) # doesn't use the state, state is instead given in .seen_state()
             if not isinstance(action, int):
                 action = action.squeeze()
             self.state, reward, done, _ = self.step(action)
@@ -231,10 +242,10 @@ class Explore:
             )
             #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
             if explorer.__repr__() == "ppo":
-                e = {'done':done}
-                if (max_steps > 0 and len(trajectory) >= max_steps):
-                    e['done'] = 1
-                if not trajectory[-1].done and trajectory[-1].to.cell not in GRID:
+                e = {'done': done, 'observation': self.state}
+                # if (max_steps > 0 and len(trajectory) >= max_steps):
+                #     e['done'] = 1
+                if not done and trajectory[-1].to.cell not in GRID:
                     e['reward'] = 1
                     explorer.seen_state(e)
                     self.IR += 1
