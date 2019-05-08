@@ -490,7 +490,7 @@ class MlshExplorer:
 
 		# MLSH
 		self.master = None
-		self.subs = [PPOSub(actors,  nexp*timedialation//nsubs, lr_sub, lr_decay_sub, cl_decay_sub, nminibatches, n_tr_epochs, cliprange_sub,
+		self.subs = [PPOSub(actors,  nexp*timedialation, lr_sub, lr_decay_sub, cl_decay_sub, nminibatches, n_tr_epochs, cliprange_sub,
 									gamma, lam, name=f'Sub_{i}') for i in range(nsubs)]
 		self.nsubs = nsubs
 		self.time_dialation = timedialation
@@ -521,7 +521,7 @@ class MlshExplorer:
 		ob_space = env.observation_space
 		ac_space = gym.spaces.Discrete(len(self.subs))
 		self.master = ppo2.Model(policy=masterPolicy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
-								nbatch_train=self.nsteps//self.n_mb, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
+								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
 								max_grad_norm=0.5, name='Master')
 		for sub in self.subs:
 			sub.init_model(ob_space=ob_space, ac_space=env.action_space, policy=subPolicies)
