@@ -8,7 +8,6 @@
 # limitations under the License.
 
 from .explorers import *
-from diverseExplorer import PPOExplorer_v3 as PPOExplorer
 import goexplore_py.policies
 from .montezuma_env import *
 from .utils import *
@@ -129,8 +128,8 @@ class Explore:
 
         if self.explorer.__repr__() == 'ppo':
             if isinstance(get_env().observation_space, gym.spaces.Box):
-                self.explorer.init_model(get_env(), policy=goexplore_py.policies.CnnPolicy)
-            elif isinstance(get_env().observation_space, gym.spaces.Discrete):
+                self.explorer.init_model(get_env(), masterPolicy=goexplore_py.policies.CnnPolicy, subPolicies=goexplore_py.policies.CnnPolicy)
+            elif isinstance(get_env().observation_space, gym.spaces.MultiBinary):
                 self.explorer.init_model(get_env(), policy=goexplore_py.policies.MlpPolicy)
             else:
                 raise Exception("Unkown observation space")

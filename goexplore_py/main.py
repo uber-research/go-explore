@@ -21,7 +21,7 @@ from tensorflow import summary, ConfigProto, Session, name_scope
 from goexplore_py.myUtil import makeHistProto
 from itertools import product as itproduct
 
-
+from diverseExplorer import PPOExplorer_v3 as PPOExplorer, MlshExplorer
 
 VERSION = 1
 
@@ -35,7 +35,7 @@ MAX_LEVEL = None
 
 PROFILER = None
 
-test_dict = {'explorer':['ppo'], 'game':['nchain'], 'actors':[4,2,1], 'nexp':[100], 'batch_size':[1]}
+test_dict = {'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1], 'nexp':[2000], 'batch_size':[1]}
 TERM_CONDITION = True
 NSAMPLES = 4
 
@@ -67,14 +67,24 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		 keep_item_pictures=False,
 		 batch_size=100,
 		 reset_cell_on_update=False,
-		 actors=8,
+		 actors=1,
 		 nexp = None,
 		 lr=1.0e-03, lr_decay=0.99999,
 		 cliprange=0.1, cl_decay=0.99999,
 		 n_tr_epochs=2,
 		 mbatch=4,
 		 gamma=0.99, lam=0.95,
-		 log_path="log"
+		 log_path="log",
+		 nsubs = 8,
+		 timedialation = 20,
+		 master_lr = 0.01,
+		 lr_decay_master =0.99999,
+		 master_cl = 0.1,
+		 cl_decay_master =0.99999,
+		 warmup= 20,
+		 train = 40
+
+
 
 
 		 ):
@@ -99,6 +109,25 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		# 	explorer.init_model(env="NChain-v0", policy=MlpPolicy)
 		# else:
 		# 	explorer.init_model(env="MontezumaRevengeDeterministic-v4", policy=CnnPolicy)
+	elif explorer == 'mlsh':
+		ncpu = multiprocessing.cpu_count()
+		if sys.platform == 'darwin': ncpu //= 2
+		config = ConfigProto(allow_soft_placement=True,
+							 intra_op_parallelism_threads=ncpu,
+							 inter_op_parallelism_threads=ncpu)
+		config.gpu_options.allow_growth = True  # pylint: disable=E1101
+		os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+		sess = Session(config=config).__enter__()
+		if nexp is None:
+			nexp = explore_steps
+		explorer = MlshExplorer(nsubs=nsubs, timedialation=timedialation, warmup_T=nexp*warmup, train_T=nexp*train,
+								actors=actors, nexp=nexp//timedialation, lr_mas=master_lr, lr_sub=lr, lr_decay=lr_decay_master,
+								lr_decay_sub=lr_decay, cl_decay=cl_decay_master, cl_decay_sub=cl_decay, n_tr_epochs=n_tr_epochs,
+								nminibatches=mbatch, gamma=gamma, lam=lam, cliprange_mas=master_cl, cliprange_sub=cliprange)
+
+
+
+
 	elif explorer == 'repeated':
 		explorer = RepeatedRandomExplorer(mean_repeat)
 	else:
@@ -212,7 +241,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				return False
 			if MAX_LEVEL is not None and len(Counter(e.level for e in expl.grid).keys()) > MAX_LEVEL:
 				return False
-			if TERM_CONDITION and len(expl.grid) == get_env().env.unwrapped.n:
+			if TERM_CONDITION and False:
 				return False
 			return True
 
@@ -361,7 +390,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				grid_copy = None
 				grid_set = None
 		# TODO Insert model save here
-		print(expl.explorer.__repr__())
+		#print(expl.explorer.__repr__())
 		if expl.explorer.__repr__() == 'ppo':
 			sess.__exit__(None, None, None)
 			tf.reset_default_graph()
@@ -402,7 +431,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 
 	parser.add_argument('--resolution', '--res', type=float, default=16, help='Length of the side of a grid cell.')
-	parser.add_argument('--explorer', '--expl', type=str, default='repeated',
+	parser.add_argument('--explorer', '--expl', type=str, default='mlsh',
 						help='The explorer to use when searching for solution')
 	parser.add_argument('--use_scores', dest='use_objects', action='store_false', help='Use scores in the cell description. Otherwise objects will be used.')
 	parser.add_argument('--repeat_action', '--ra', type=int, default=20, help='The average number of times that actions will be repeated in the exploration phase.')

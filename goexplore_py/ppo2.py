@@ -77,7 +77,8 @@ class Model(object):
 			sess.run(restores)
 			# If you want to load weights, also save/load observation scaling inside VecNormalize
 
-
+		def reset():
+			sess.run(tf.initialize_variables(params))
 
 
 		self.train = train
@@ -88,6 +89,7 @@ class Model(object):
 		self.initial_state = act_model.initial_state
 		self.save = save
 		self.load = load
+		self.reset = reset
 
 		tf.global_variables_initializer().run(session=sess) #pylint: disable=E1101
 

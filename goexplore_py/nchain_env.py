@@ -1,5 +1,6 @@
 
 import gym
+import numpy as np
 
 class NChainPos:
 	__slots__ = ['state', 'level', 'score', 'tuple']
@@ -38,6 +39,7 @@ class MyNChain:
 		self.env = self.env.unwrapped
 		self.env.unwrapped.n = N
 		self.env.unwrapped.slip = 0
+		self.env.observation_space = gym.spaces.MultiBinary(N)
 		self.state = None
 		self.pos = None
 		self.cur_steps = 0
@@ -53,14 +55,20 @@ class MyNChain:
 		self.cur_steps = 0
 		self.cur_score = 0
 		self.pos = NChainPos(self.state)
-		return self.state
+		obs = np.zeros(self.env.observation_space.n)
+		obs[self.state] = 1
+		return obs
 
 	def step(self, action):
 		self.state, reward, done, info = self.env.step(action)
 		self.cur_steps += 1
 		self.cur_score += reward
 		self.pos = NChainPos(self.state)
-		return self.state, reward, done, info
+
+		obs = np.zeros(self.env.observation_space.n)
+		obs[self.state] = 1
+		return obs, reward, done, info
+
 
 	def get_pos(self):
 		return self.pos
