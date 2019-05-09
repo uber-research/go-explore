@@ -50,8 +50,8 @@ test_dict = {'log_path': ["log/gridsearch"], 'explorer':['mlsh'], 'game':['monte
 		'lr_decay_master': [1],
 		'master_cl': [0.1],
 		'cl_decay_master' :[1],
-		'warmup': [ 10, 20, 40],
-		'train': [ 20, 40, 80]}
+		'warmup': [ 20, 40],
+		'train': [  40, 80]}
 TERM_CONDITION = True
 NSAMPLES = 4
 
