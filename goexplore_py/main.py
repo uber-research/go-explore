@@ -110,7 +110,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 
 
 		 ):
-
+	sess = None
 	if game == "robot":
 		explorer = RepeatedRandomExplorerRobot()
 	elif explorer == "ppo":
@@ -421,7 +421,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				grid_set = None
 		# TODO Insert model save here
 		#print(expl.explorer.__repr__())
-		if expl.explorer.__repr__() == 'ppo':
+		if sess is not None:
 			sess.__exit__(None, None, None)
 			tf.reset_default_graph()
 		else:
