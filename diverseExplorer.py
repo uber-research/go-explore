@@ -460,7 +460,7 @@ class PPOExplorer_v3:
 
 class MlshExplorer:
 	def __init__(self, nsubs, timedialation, warmup_T, train_T,  actors, nexp, lr_mas, lr_sub, retrain_N = None,
-				 lr_decay=1, cl_decay=1, lr_decay_sub=1, cl_decay_sub=1, nminibatches=4, n_tr_epochs=4,
+				 lr_decay=1., cl_decay=1., lr_decay_sub=1., cl_decay_sub=1., nminibatches=4, n_tr_epochs=4,
 				 cliprange_mas=0.1, cliprange_sub = 0.1, gamma=0.99, lam=0.95):
 
 
@@ -729,7 +729,7 @@ class MlshExplorer:
 
 
 class PPOSub:
-	def __init__(self, actors, nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1,
+	def __init__(self, actors, nexp, lr, lr_decay=1., cl_decay=1., nminibatches=4, n_tr_epochs=4, cliprange=0.1,
 				 gamma=0.99, lam=0.95, name='model'):
 
 		self.nacts = actors

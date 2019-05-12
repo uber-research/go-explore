@@ -37,15 +37,16 @@ PROFILER = None
 
 LOG_DIR = None
 
+TEST_OVERRIDE = True
 test_dict = {'log_path': ["log/gridsearch"], 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
-			 'nexp':[100, 1000, 2000], 'batch_size':[100], 'resolution': [16],
+			 'nexp':[1024, 2048], 'batch_size':[100], 'resolution': [16],
 		'lr': [1.0e-03], 'lr_decay':[ 1],
 		'cliprange':[0.1], 'cl_decay': [ 1],
 		'n_tr_epochs':[2],
 		'mbatch': [4],
 		'gamma':[0.99], 'lam':[0.95],
 		'nsubs' : [8],
-		'timedialation': [20],
+		'timedialation': [16],
 		'master_lr': [0.01,  0.04, 0.001],
 		'lr_decay_master': [1],
 		'master_cl': [0.1],
@@ -272,11 +273,11 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 			logDir = f'{logDir}_actors_{actors}_exp_{nexp}_lr_{lr}_lrDec_{lr_decay}_cl_{cliprange}_clDec_{cl_decay}' \
 				f'_mbatch_{mbatch}_trainEpochs_{n_tr_epochs}_gamma_{gamma}_lam_{lam}'
 		if  explorer.__repr__() == 'mlsh':
-			logDir = f'{logDir}_subs_{nsubs}_timeadialation_{timedialation}_warmUp_{warmup}_jointrain_{train}_exp_{nexp}' \
-				f'_lrMas_{master_lr}_lrDecMas_{lr_decay_master}_clMas_{master_cl}' \
-				f'_clDecMas_{cl_decay_master}_lrSub_{lr}_lrDecSub_{lr_decay}_clSub_{cliprange}_clDecSub_{cl_decay}' \
-				f'_retrain_{retrain_N}' \
-				f'_mbatch_{mbatch}_trainEpochs_{n_tr_epochs}_gamma_{gamma}_lam_{lam}'
+			logDir = f'{logDir}_subs_{nsubs}_td_{timedialation}_WU_{warmup}_tr_{train}_exp_{nexp}' \
+				f'_lrM_{master_lr}_lrDM_{lr_decay_master}_clM_{master_cl}' \
+				f'_clDM_{cl_decay_master}_lrS_{lr}_lrDS_{lr_decay}_clS_{cliprange}_clDS_{cl_decay}' \
+				f'_rt_{retrain_N}' \
+				f'_mb_{mbatch}_trEp_{n_tr_epochs}_gam_{gamma}_lam_{lam}'
 		logDir = f'{logDir}_{time.time()}'
 		global LOG_DIR
 		LOG_DIR= logDir
@@ -560,7 +561,7 @@ if __name__ == '__main__':
 		PROFILER = cProfile.Profile()
 		PROFILER.enable()
 	try:
-		if not args.test_run:
+		if not (args.test_run or TEST_OVERRIDE):
 			run(resolution=args.resolution, score_objects=args.use_objects, explorer=args.explorer,
 				mean_repeat=args.repeat_action, explore_steps=args.explore_steps, ignore_death=args.ignore_death,
 				base_path=args.base_path, seed_path=args.seed_path, x_repeat=args.x_repeat, seen_weight=args.seen_weight,
@@ -588,6 +589,15 @@ if __name__ == '__main__':
 				log_path=args.log_path)
 		else:
 			keys, values = zip(*test_dict.items())
+			for nexp in test_dict['nexp']:
+				for mb in test_dict['mbatch']:
+					assert nexp % mb == 0, f"nexp({nexp}) not divisble by mbatch({mb})"
+					for td in test_dict['timedialation']:
+						assert nexp % td == 0, f"nexp ({nexp}) not divisble by timedialation({td})"
+						assert (nexp//td) % mb == 0, f'master exp ({nexp}/{td}={nexp//td}) not divisible by mbatch ({mb})'
+
+
+
 			for _ in range(NSAMPLES):
 				for v in itproduct(*values):
 					run( base_path='./results/', **dict(zip(keys, v))) #Run experiment with permutation of values from test_dict
