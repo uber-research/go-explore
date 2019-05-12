@@ -219,6 +219,7 @@ class Explore:
         global GRID
         explorer.init_trajectory(self.state, None)
         trajectory = []
+        seen_cells = set()
         while True:
             initial_pos_info = self.get_pos_info(include_restore=False)
             if ((max_steps > 0 and len(trajectory) >= max_steps) or
@@ -241,13 +242,15 @@ class Explore:
             )
             #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
             if explorer.__repr__() == "mlsh":
+
                 e = {'done': done, 'observation': self.state}
                 # if (max_steps > 0 and len(trajectory) >= max_steps):
                 #     e['done'] = 1
-                if not done and trajectory[-1].to.cell not in GRID:
+                if not done and trajectory[-1].to.cell not in GRID and trajectory[-1].to.cell not in seen_cells:
                     e['reward'] = 1
                     explorer.seen_state(e)
                     self.IR += 1
+                    seen_cells.add(trajectory[-1].to.cell)
                 else:
                     e['reward'] = 0
                     explorer.seen_state(e)
