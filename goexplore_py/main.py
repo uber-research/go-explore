@@ -38,8 +38,8 @@ PROFILER = None
 LOG_DIR = None
 
 TEST_OVERRIDE = True
-test_dict = {'log_path': ["log/gridsearch"], 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
-			 'nexp':[1024, 2048], 'batch_size':[100], 'resolution': [16],
+test_dict = {'log_path': ["log/gridsearch/fixed_reward"], 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
+			 'nexp':[128, 1024, 2048], 'batch_size':[100], 'resolution': [16],
 		'lr': [1.0e-03], 'lr_decay':[ 1],
 		'cliprange':[0.1], 'cl_decay': [ 1],
 		'n_tr_epochs':[2],
