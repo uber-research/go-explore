@@ -39,20 +39,20 @@ LOG_DIR = None
 
 TEST_OVERRIDE = True
 test_dict = {'log_path': ["log/gridsearch/fixed_reward"], 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
-			 'nexp':[128, 1024, 2048], 'batch_size':[100], 'resolution': [16],
-		'lr': [1.0e-03], 'lr_decay':[ 1],
+			 'nexp':[128], 'batch_size':[1000,100], 'resolution': [16],
+		'lr': [1.0e-03, 1.0e-04], 'lr_decay':[ 1],
 		'cliprange':[0.1], 'cl_decay': [ 1],
 		'n_tr_epochs':[2],
 		'mbatch': [4],
-		'gamma':[0.99], 'lam':[0.95],
-		'nsubs' : [8],
-		'timedialation': [16],
-		'master_lr': [0.01,  0.04, 0.001],
+		'gamma':[0.999], 'lam':[0.95],
+		'nsubs' : [4],
+		'timedialation': [8],
+		'master_lr': [0.01],
 		'lr_decay_master': [1],
 		'master_cl': [0.1],
 		'cl_decay_master' :[1],
-		'warmup': [ 20, 40],
-		'train': [  40, 80]}
+		'warmup': [ 40],
+		'train': [  40]}
 TERM_CONDITION = True
 NSAMPLES = 4
 
