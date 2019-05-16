@@ -19,7 +19,7 @@ import cProfile
 from goexplore_py.policies import *
 from tensorflow import summary, ConfigProto, Session, name_scope
 from goexplore_py.myUtil import makeHistProto
-from itertools import product as itproduct
+from itertools import product as itproduct, islice
 
 from diverseExplorer import PPOExplorer_v3 as PPOExplorer, MlshExplorer
 
@@ -283,150 +283,155 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		LOG_DIR= logDir
 		summaryWriter = summary.FileWriter(logdir=logDir, flush_secs=20)
 		keys_found = []
+		try:
+			while should_continue():
+				# Run one iteration
+				old += expl.frames_true
+				old_compute += expl.frames_compute
 
-		while should_continue():
-			# Run one iteration
-			old += expl.frames_true
-			old_compute += expl.frames_compute
-
-			expl.run_cycle()
-
-
-			t.update(expl.frames_true )#- old)
-			t_compute.update(expl.frames_compute )#- old_compute)
-			t_iter.update(1)
-			cur_time = np.round(time.time())
-			t_time.update(int(cur_time - last_time))
-			last_time = cur_time
-			n_iters += 1
+				expl.run_cycle()
 
 
-			entry = [summary.Summary.Value(tag='Rooms_Found', simple_value=len(get_env().rooms))]
-			entry.append(summary.Summary.Value(tag='Cells', simple_value=len(expl.grid)))
-			entry.append(summary.Summary.Value(tag='Top_score', simple_value=max(e.score for e in expl.grid.values())))
-			if game != "nchain":
-				dist = Counter(e.score for e in expl.real_grid)
-				for key in dist.keys():
-					if key not in keys_found:
-						keys_found.append(key)
-				hist = makeHistProto(dist, bins=30, keys=keys_found)
-				leveldist = Counter(e.level for e in expl.real_grid)
-				histlvl = makeHistProto(leveldist, bins=5)
-				entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
-				entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
-			entry.append(summary.Summary.Value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
+				t.update(expl.frames_true )#- old)
+				t_compute.update(expl.frames_compute )#- old_compute)
+				t_iter.update(1)
+				cur_time = np.round(time.time())
+				t_time.update(int(cur_time - last_time))
+				last_time = cur_time
+				n_iters += 1
 
-			entry.extend(expl.summary)
-			summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
-			expl.summary = []
 
-			# In some circumstances (see comments), save a checkpoint and some pictures
-			if ((not seen_level_1 and expl.seen_level_1) or  # We have solved level 1
-					old == 0 or  # It is the first iteration
-					old // THRESH_TRUE != expl.frames_true // THRESH_TRUE or  # We just passed the THRESH_TRUE threshold
-					old_compute // THRESH_COMPUTE != expl.frames_compute // THRESH_COMPUTE or  # We just passed the THRESH_COMPUTE threshold
-					not should_continue()):  # This is the last iteration
+				entry = [summary.Summary.Value(tag='Rooms_Found', simple_value=len(get_env().rooms))]
+				entry.append(summary.Summary.Value(tag='Cells', simple_value=len(expl.grid)))
+				entry.append(summary.Summary.Value(tag='Top_score', simple_value=max(e.score for e in expl.grid.values())))
+				if game != "nchain":
+					dist = Counter(e.score for e in expl.real_grid)
+					for key in dist.keys():
+						if key not in keys_found:
+							keys_found.append(key)
+					hist = makeHistProto(dist, bins=30, keys=keys_found)
+					leveldist = Counter(e.level for e in expl.real_grid)
+					histlvl = makeHistProto(leveldist, bins=5)
+					entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
+					entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
+				entry.append(summary.Summary.Value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
 
-				# Quick bookkeeping, printing update
-				seen_level_1 = expl.seen_level_1
-				filename = f'{base_path}/{expl.frames_true:0{n_digits}}_{expl.frames_compute:0{n_digits}}'
+				entry.extend(expl.summary)
+				summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
+				expl.summary = []
 
-				tqdm.write(f'Cells at levels: {dict(Counter(e.level for e in expl.real_grid))}')
-				tqdm.write(f'Cells at objects: {dict(Counter(e.score for e in expl.real_grid))}')
-				tqdm.write(f'Max score: {max(e.score for e in expl.grid.values())}')
-				tqdm.write(f'Compute cells: {len(expl.grid)}')
+				# In some circumstances (see comments), save a checkpoint and some pictures
+				if ((not seen_level_1 and expl.seen_level_1) or  # We have solved level 1
+						old == 0 or  # It is the first iteration
+						old // THRESH_TRUE != expl.frames_true // THRESH_TRUE or  # We just passed the THRESH_TRUE threshold
+						old_compute // THRESH_COMPUTE != expl.frames_compute // THRESH_COMPUTE or  # We just passed the THRESH_COMPUTE threshold
+						not should_continue()):  # This is the last iteration
 
-				# Save pictures
-				if show or save_item_pictures or save_prob_pictures:
-					# Show normal grid
-					if show or save_item_pictures:
-						get_env().render_with_known(
-							list(expl.real_grid), resolution,
-							show=False, filename=filename + '.png',
-							get_val=lambda x: 1,
-							combine_val=lambda x, y: x + y
-						)
+					# Quick bookkeeping, printing update
+					seen_level_1 = expl.seen_level_1
+					filename = f'{base_path}/{expl.frames_true:0{n_digits}}_{expl.frames_compute:0{n_digits}}'
 
-					if not use_real_pos:
-						object_combinations = sorted(set(e.real_cell.score for e in expl.grid.values() if e.real_cell is not None))
-						for obj in object_combinations:
-							grid_at_obj = [e.real_cell for e in expl.grid.values() if e.real_cell is not None and e.real_cell.score == obj]
+					tqdm.write(f'Cells at levels: {dict(Counter(e.level for e in expl.real_grid))}')
+					tqdm.write(f'Cells at objects: {dict(Counter(e.score for e in expl.real_grid))}')
+					tqdm.write(f'Max score: {max(e.score for e in expl.grid.values())}')
+					tqdm.write(f'Compute cells: {len(expl.grid)}')
+
+					# Save pictures
+					if show or save_item_pictures or save_prob_pictures:
+						# Show normal grid
+						if show or save_item_pictures:
 							get_env().render_with_known(
-								grid_at_obj, resolution,
-								show=False, filename=filename + f'_object_{obj}.png',
+								list(expl.real_grid), resolution,
+								show=False, filename=filename + '.png',
 								get_val=lambda x: 1,
 								combine_val=lambda x, y: x + y
 							)
 
-					# Show probability grid
-					if (use_real_pos and show) or save_prob_pictures:
-						expl.selector.set_ranges(list(expl.grid.keys()))
-						possible_scores = sorted(set(e.score for e in expl.grid))
-						total = np.sum(
-							[expl.selector.get_weight(x, expl.grid[x], possible_scores, expl.grid) for x in expl.grid])
-						get_env().render_with_known(
-							list(expl.grid.keys()), resolution,
-							show=False, filename=filename + '_prob.PNG',
-							combine_val=lambda x, y: x + y,
-							get_val=lambda x: expl.selector.get_weight(x, expl.grid[x], possible_scores,
-																	   expl.grid) / total,
-						)
+						if not use_real_pos:
+							object_combinations = sorted(set(e.real_cell.score for e in expl.grid.values() if e.real_cell is not None))
+							for obj in object_combinations:
+								grid_at_obj = [e.real_cell for e in expl.grid.values() if e.real_cell is not None and e.real_cell.score == obj]
+								get_env().render_with_known(
+									grid_at_obj, resolution,
+									show=False, filename=filename + f'_object_{obj}.png',
+									get_val=lambda x: 1,
+									combine_val=lambda x, y: x + y
+								)
+
+						# Show probability grid
+						if (use_real_pos and show) or save_prob_pictures:
+							expl.selector.set_ranges(list(expl.grid.keys()))
+							possible_scores = sorted(set(e.score for e in expl.grid))
+							total = np.sum(
+								[expl.selector.get_weight(x, expl.grid[x], possible_scores, expl.grid) for x in expl.grid])
+							get_env().render_with_known(
+								list(expl.grid.keys()), resolution,
+								show=False, filename=filename + '_prob.PNG',
+								combine_val=lambda x, y: x + y,
+								get_val=lambda x: expl.selector.get_weight(x, expl.grid[x], possible_scores,
+																		   expl.grid) / total,
+							)
+						if prev_checkpoint and clear_old_checkpoints:
+							if not keep_item_pictures:
+								try:
+									os.remove(prev_checkpoint + '.png')
+								except FileNotFoundError:
+									# If it doesn't exists, we don't need to remove it.
+									pass
+							if use_real_pos and not keep_prob_pictures:
+								try:
+									os.remove(prev_checkpoint + '_prob.PNG')
+								except FileNotFoundError:
+									# If it doesn't exists, we don't need to remove it.
+									pass
+
+					with open(filename + ".csv", 'w') as f:
+						f.write(str(len(expl.grid)))
+						f.write(", ")
+						f.write(str(max([a.score for a in expl.grid.values()])))
+						f.write("\n")
+
+					# Save checkpoints
+					grid_copy = {}
+					for k, v in expl.grid.items():
+						grid_copy[k] = v
+					# TODO: is 7z still necessary now that there are other ways to reduce space?
+					pickle.dump(grid_copy, lzma.open(filename + '.7z', 'wb', preset=0))
+
+					# Clean up previous checkpoint.
 					if prev_checkpoint and clear_old_checkpoints:
-						if not keep_item_pictures:
-							try:
-								os.remove(prev_checkpoint + '.png')
-							except FileNotFoundError:
-								# If it doesn't exists, we don't need to remove it.
-								pass
-						if use_real_pos and not keep_prob_pictures:
-							try:
-								os.remove(prev_checkpoint + '_prob.PNG')
-							except FileNotFoundError:
-								# If it doesn't exists, we don't need to remove it.
-								pass
+						os.remove(prev_checkpoint + '.7z')
+					prev_checkpoint = filename
 
-				with open(filename + ".csv", 'w') as f:
-					f.write(str(len(expl.grid)))
-					f.write(", ")
-					f.write(str(max([a.score for a in expl.grid.values()])))
-					f.write("\n")
+					# A much smaller file that should be sufficient for view folder, but not for restoring
+					# the demonstrations. Should make view folder much faster.
+					grid_set = {}
+					for k, v in expl.grid.items():
+						grid_set[k] = v.score
+					pickle.dump(grid_set, lzma.open(filename + '_set.7z', 'wb', preset=0))
+					pickle.dump(expl.real_grid, lzma.open(filename + '_set_real.7z', 'wb', preset=0))
 
-				# Save checkpoints
-				grid_copy = {}
-				for k, v in expl.grid.items():
-					grid_copy[k] = v
-				# TODO: is 7z still necessary now that there are other ways to reduce space?
-				pickle.dump(grid_copy, lzma.open(filename + '.7z', 'wb', preset=0))
-
-				# Clean up previous checkpoint.
-				if prev_checkpoint and clear_old_checkpoints:
-					os.remove(prev_checkpoint + '.7z')
-				prev_checkpoint = filename
-
-				# A much smaller file that should be sufficient for view folder, but not for restoring
-				# the demonstrations. Should make view folder much faster.
-				grid_set = {}
-				for k, v in expl.grid.items():
-					grid_set[k] = v.score
-				pickle.dump(grid_set, lzma.open(filename + '_set.7z', 'wb', preset=0))
-				pickle.dump(expl.real_grid, lzma.open(filename + '_set_real.7z', 'wb', preset=0))
-
-				if PROFILER:
-					print("ITERATION:", n_iters)
-					PROFILER.disable()
-					PROFILER.dump_stats(filename + '.stats')
-					# PROFILER.print_stats()
-					PROFILER.enable()
-				# Save a bit of memory by freeing our copies.
-				grid_copy = None
-				grid_set = None
-		# TODO Insert model save here
-		#print(expl.explorer.__repr__())
-		if sess is not None:
-			sess.__exit__(None, None, None)
-			tf.reset_default_graph()
-		else:
-			print('did not clear graph')
+					if PROFILER:
+						print("ITERATION:", n_iters)
+						PROFILER.disable()
+						PROFILER.dump_stats(filename + '.stats')
+						# PROFILER.print_stats()
+						PROFILER.enable()
+					# Save a bit of memory by freeing our copies.
+					grid_copy = None
+					grid_set = None
+		finally:
+			# TODO Insert model save here
+			if isinstance(expl.explorer, MlshExplorer):
+				expl.explorer.master.save(f'{base_path}/master')
+				for sub in expl.explorer.subs:
+					sub.model.save(f'{base_path}/{sub}')
+			#print(expl.explorer.__repr__())
+			if sess is not None:
+				sess.__exit__(None, None, None)
+				tf.reset_default_graph()
+			else:
+				print('did not clear graph')
 
 
 def run(base_path, **kwargs):
