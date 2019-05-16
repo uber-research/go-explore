@@ -605,7 +605,7 @@ if __name__ == '__main__':
 
 			for _ in range(NSAMPLES):
 				for v in itproduct(*values):
-					run( base_path='./results/', **dict(zip(keys, v))) #Run experiment with permutation of values from test_dict
+					run( **dict(zip(keys, v))) #Run experiment with permutation of values from test_dict
 		if PROFILER is not None:
 			PROFILER.disable()
 	finally:
