@@ -38,8 +38,10 @@ PROFILER = None
 LOG_DIR = None
 
 TEST_OVERRIDE = True
-test_dict = {'log_path': ["log/test"], 'base_path':['./results/test/'], 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
+test_dict = {'log_path': ["log/test"], 'base_path':['./results/test/'],
+			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
 			 'nexp':[128], 'batch_size':[1000,100], 'resolution': [16],
+			 'explore_steps':[100],
 		'lr': [1.0e-03, 1.0e-04], 'lr_decay':[ 1],
 		'cliprange':[0.1], 'cl_decay': [ 1],
 		'n_tr_epochs':[2],
