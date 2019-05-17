@@ -132,6 +132,45 @@ class CnnPolicy(object):
         self.step = step
         self.value = value
 
+
+class CnnPolicy_withDomain(object):
+
+    def __init__(self, sess, ob_space, domain_ob , ac_space, nbatch, nsteps, reuse=False, name='model'): #pylint: disable=W0613
+
+        nh, nw, nc = ob_space.shape
+        ob_shape = (nbatch, nh, nw, nc)
+        nact = ac_space.n
+
+
+        X = tf.placeholder(tf.uint8, ob_shape) #obs
+        G = tf.placeholder(tf.uint8, domain_ob.shape)
+        with tf.variable_scope(name, reuse=reuse):
+            h = nature_cnn(X)
+            d = nature_cnn(G)
+            c = tf.concat([h,d],0)
+            pi = fc(c, 'pi', nact, init_scale=0.01)
+            vf = fc(c, 'v', 1)[:,0]
+
+        self.pdtype = make_pdtype(ac_space)
+        self.pd = self.pdtype.pdfromflat(pi)
+
+        a0 = self.pd.sample()
+        neglogp0 = self.pd.neglogp(a0)
+        self.initial_state = None
+
+        def step(ob, *_args, **_kwargs):
+            a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob})
+            return a, v, self.initial_state, neglogp
+
+        def value(ob, *_args, **_kwargs):
+            return sess.run(vf, {X:ob})
+
+        self.X = X
+        self.pi = pi
+        self.vf = vf
+        self.step = step
+        self.value = value
+
 class MlpPolicy(object):
     def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, name='model'): #pylint: disable=W0613
         ob_shape = (nbatch,) + ob_space.shape
