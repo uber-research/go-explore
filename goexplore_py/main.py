@@ -39,7 +39,7 @@ LOG_DIR = None
 
 TEST_OVERRIDE = True
 SAVE_MODEL = False
-test_dict = {'log_path': ["log/domain"], 'base_path':['./results/domain/'],
+test_dict = {'log_path': ["log/test/domain"], 'base_path':['./results/test/domain/'],
 			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
 			 'nexp':[128], 'batch_size':[100], 'resolution': [16],
 			 'explore_steps':[100],
