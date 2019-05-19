@@ -288,7 +288,7 @@ class Explore:
                 # else:
                 #     e['reward'] = 0 + np.clip(reward, -1, 1)
                 #     explorer.seen_state(e)
-                reward = clipreward(trajectory[-1].to.cell, reward, self.grid)
+                reward = clipreward(trajectory[-1].to.cell, reward, self.grid, seen_cells)
                 self.IR += reward
                 e['reward'] = reward
                 seen_cells.add(trajectory[-1].to.cell)

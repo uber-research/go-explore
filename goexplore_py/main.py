@@ -39,7 +39,7 @@ LOG_DIR = None
 
 TEST_OVERRIDE = True
 SAVE_MODEL = False
-test_dict = {'log_path': ["log/test/nodomain/clipreward"], 'base_path':['./results/test/nodomain/clipreward'],
+test_dict = {'log_path': ["log/test/domain/clipreward"], 'base_path':['./results/test/domain/clipreward'],
 			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
 			 'nexp':[128], 'batch_size':[100], 'resolution': [16],
 			 'explore_steps':[100],
@@ -56,7 +56,7 @@ test_dict = {'log_path': ["log/test/nodomain/clipreward"], 'base_path':['./resul
 		'cl_decay_master' :[1],
 		'warmup': [ 40],
 		'train': [  40],
-			 'with_domain': [False],
+			 'with_domain': [True]
 			}
 TERM_CONDITION = True
 NSAMPLES = 4
