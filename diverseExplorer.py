@@ -656,21 +656,24 @@ class MlshExplorer:
 
 	def train(self):
 		self.mb_obs = np.asarray(self.mb_obs, dtype=self.obs.dtype).squeeze()
-		self.mb_domains = np.asarray(self.mb_domains, dtype=self.domain.dtype).squeeze(axis=(0,2))
 		self.mb_rewards = np.asarray(self.mb_rewards, dtype=np.float32).squeeze()
 		self.mb_actions = np.asarray(self.mb_actions).squeeze()
 		self.mb_values = np.asarray(self.mb_values, dtype=np.float32).squeeze()
 		self.mb_neglogpacs = np.asarray(self.mb_neglogpacs, dtype=np.float32).squeeze()
 		self.mb_dones = np.asarray(self.mb_dones, dtype=np.bool).squeeze()
+		if isinstance(self.master.train_model, policies.CnnPolicy_withDomain):
+			self.mb_domains = np.asarray(self.mb_domains, dtype=self.domain.dtype).squeeze(axis=(0,2))
+
 
 		if self.nacts > 1:
 			self.mb_obs = self.mb_obs.swapaxes(0, 1)
-			self.mb_domains = self.mb_domains.swapaxes(0, 1)
 			self.mb_rewards = self.mb_rewards.swapaxes(0, 1)
 			self.mb_actions = self.mb_actions.swapaxes(0, 1)
 			self.mb_values = self.mb_values.swapaxes(0, 1)
 			self.mb_neglogpacs = self.mb_neglogpacs.swapaxes(0, 1)
 			self.mb_dones = self.mb_dones.swapaxes(0, 1)
+			if isinstance(self.master.train_model, policies.CnnPolicy_withDomain):
+				self.mb_domains = self.mb_domains.swapaxes(0, 1)
 
 		# From baselines' ppo2 runner():
 		# Calculate returns
@@ -719,7 +722,7 @@ class MlshExplorer:
 		self.cliprange *=  self.cl_decay
 
 		self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs, \
-			self.mb_domains = [[]], [[]], [[]], [[]], [[]], [[]], [[]]
+		self.mb_domains = [[]], [[]], [[]], [[]], [[]], [[]], [[]]
 
 	def get_action(self, state, env):
 
