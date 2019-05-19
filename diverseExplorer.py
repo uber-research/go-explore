@@ -663,7 +663,8 @@ class MlshExplorer:
 		self.mb_dones = np.asarray(self.mb_dones, dtype=np.bool).squeeze()
 		if isinstance(self.master.train_model, policies.CnnPolicy_withDomain):
 			self.mb_domains = np.asarray(self.mb_domains, dtype=self.domain.dtype).squeeze(axis=(0,2))
-
+		else:
+			self.mb_domains = np.asarray(self.mb_domains).squeeze(axis=0)
 
 		if self.nacts > 1:
 			self.mb_obs = self.mb_obs.swapaxes(0, 1)
