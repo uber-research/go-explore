@@ -38,11 +38,12 @@ PROFILER = None
 LOG_DIR = None
 
 TEST_OVERRIDE = True
-test_dict = {'log_path': ["log/test"], 'base_path':['./results/test/'],
+SAVE_MODEL = False
+test_dict = {'log_path': ["log/domain"], 'base_path':['./results/domain/'],
 			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
-			 'nexp':[128], 'batch_size':[1000,100], 'resolution': [16],
+			 'nexp':[128], 'batch_size':[100], 'resolution': [16],
 			 'explore_steps':[100],
-		'lr': [1.0e-03, 1.0e-04], 'lr_decay':[ 1],
+		'lr': [1.0e-03], 'lr_decay':[ 1],
 		'cliprange':[0.1], 'cl_decay': [ 1],
 		'n_tr_epochs':[2],
 		'mbatch': [4],
@@ -54,7 +55,8 @@ test_dict = {'log_path': ["log/test"], 'base_path':['./results/test/'],
 		'master_cl': [0.1],
 		'cl_decay_master' :[1],
 		'warmup': [ 40],
-		'train': [  40]}
+		'train': [  40],
+			 'with_domain': [True]}
 TERM_CONDITION = True
 NSAMPLES = 4
 
@@ -109,7 +111,9 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		 cl_decay_master =0.99999,
 		 warmup= 20,
 		 train = 40,
-		 retrain_N = None
+		 retrain_N = None,
+		 with_domain = False,
+		 load_model = None
 
 
 		 ):
@@ -234,7 +238,8 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		pool_class=pool_cls,
 		n_cpus=n_cpus,
 		batch_size=batch_size,
-		reset_cell_on_update=reset_cell_on_update
+		reset_cell_on_update=reset_cell_on_update,
+		with_domain=with_domain
 	)
 
 	if seed_path is not None:
@@ -424,10 +429,12 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 					grid_set = None
 		finally:
 			# TODO Insert model save here
-			if isinstance(expl.explorer, MlshExplorer):
+			if SAVE_MODEL and  isinstance(expl.explorer, MlshExplorer):
 				expl.explorer.master.save(f'{base_path}/master')
+				expl.explorer.master.save(f'{logDir}/master')
 				for sub in expl.explorer.subs:
 					sub.model.save(f'{base_path}/{sub}')
+					sub.model.save(f'{logDir}/{sub}')
 			#print(expl.explorer.__repr__())
 			if sess is not None:
 				sess.__exit__(None, None, None)
@@ -544,9 +551,13 @@ if __name__ == '__main__':
 						help='Whether or not to enable a profiler.')
 	parser.add_argument("--run_test", dest='test_run', action='store_true')
 
+	parser.add_argument("--load_model", type=str, default=None, help="path saved model")
+	parser.add_argument("--save_model", dest='save', action='store_true')
+	parser.add_argument("--with_domain", dest='domain', action='store_true')
+
 	parser.set_defaults(save_pictures=False, use_objects=True, clear_old_checkpoints=True,
 						warn_delete=True, objects_from_pixels=True, only_keys=True, remember_rooms=False,
-						optimize_score=True, state_is_pixels=False, reset_pool=False, end_on_death=False, test_run=False)
+						optimize_score=True, state_is_pixels=False, reset_pool=False, end_on_death=False, test_run=False, domain=False, save=False)
 
 	args = parser.parse_args()
 
@@ -563,6 +574,7 @@ if __name__ == '__main__':
 	MAX_ITERATIONS = args.max_iterations
 	MAX_LEVEL = args.max_level
 	TERM_CONDITION = args.test_run
+	SAVE_MODEL = args.save
 
 	if args.profile:
 		PROFILER = cProfile.Profile()

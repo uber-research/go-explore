@@ -475,7 +475,8 @@ class MlshExplorer:
 		self.batch = self.nsteps * actors
 		self.n_mb = nminibatches
 		self.nbatch_train = self.batch // self.n_mb
-		self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs,  = [[]],[[]],[[]],[[]],[[]], [[]]
+		self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs, \
+			self.mb_domains = [[]],[[]],[[]],[[]],[[]], [[]], [[]]
 		self.lr = lr_mas
 		self.lr_decay = lr_decay
 		self.cl_decay = cl_decay
@@ -505,9 +506,10 @@ class MlshExplorer:
 
 
 		self.obs = None
+		self.domain = []
 		self.env = None
 
-	def init_model(self, env, masterPolicy=policies.CnnPolicy, subPolicies=policies.CnnPolicy):
+	def init_model(self, env, domain_shape=None, masterPolicy=policies.CnnPolicy, subPolicies=policies.CnnPolicy):
 		# self.env = gym.make(env)
 		# if self.env.__repr__() != '<TimeLimit<NChainEnv<NChain-v0>>>':
 		# 	self.env = ClipRewardEnv(FrameStack(WarpFrame(self.env), 4))
@@ -520,7 +522,14 @@ class MlshExplorer:
 
 		ob_space = env.observation_space
 		ac_space = gym.spaces.Discrete(len(self.subs))
-		self.master = ppo2.Model(policy=masterPolicy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
+		if  masterPolicy == policies.CnnPolicy_withDomain: #isinstance(masterPolicy., policies.CnnPolicy_withDomain):
+			assert domain_shape is not None, Exception('domain policy but no domain shape suplied')
+			self.master = ppo2.Model(policy=masterPolicy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
+									 nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
+									 max_grad_norm=0.5, name='Master', domain_shape=domain_shape)
+			self.domain = np.zeros((1,) + domain_shape, dtype=self.master.train_model.G.dtype.name)
+		else:
+			self.master = ppo2.Model(policy=masterPolicy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
 								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
 								max_grad_norm=0.5, name='Master')
 		for sub in self.subs:
@@ -530,12 +539,13 @@ class MlshExplorer:
 		# 						max_grad_norm=0.5, name=f'Sub_{i}') for i in range(self.nsubs)]
 		self.obs = np.zeros((1,) + ob_space.shape, dtype=self.master.train_model.X.dtype.name)
 
+
 	def init_seed(self):
 		# self.exp = 0
 		# self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs = [],[],[],[],[],[]
 		pass
 
-	def init_trajectory(self, obs, arg2):
+	def init_trajectory(self, obs, domain):
 
 		# if start_cell.restore is not None:
 		# 	if self.env.unwrapped.spec._env_name != "NChain":
@@ -551,6 +561,7 @@ class MlshExplorer:
 		# 	self.obs[:] = self.env.reset()
 		# 	self.done = [False]
 		self.obs[:] = obs
+		self.domain[:] = domain
 		self.done = True # Delayed done flag to seperate from the previous episode which may not have ended in death
 		if self.t % self.time_dialation:
 			self.t += (self.time_dialation - (self.t % self.time_dialation)) # fast-forward to next master time step
@@ -571,6 +582,7 @@ class MlshExplorer:
 					self.mb_neglogpacs.append([])
 					self.mb_dones.append([])
 					self.mb_rewards.append([])
+					self.mb_domains.append([])
 				else:
 					self.actor = 0
 					self.train()
@@ -584,6 +596,7 @@ class MlshExplorer:
 		#self.obs[:], reward, self.done, _ = self.env.step(self.mb_actions[self.actor][-1].squeeze())
 
 		self.obs[:] = e['observation']
+		self.domain[:] = e['domain']
 		self.done = e['done']
 		self.reward += e['reward']
 
@@ -630,12 +643,14 @@ class MlshExplorer:
 				self.mb_neglogpacs.append([])
 				self.mb_dones.append([])
 				self.mb_rewards.append([])
+				self.mb_domains.append([])
 			else:
 				self.actor = 0
 				self.train()
 
 	def train(self):
-		self.mb_obs = np.asarray(self.mb_obs, dtype=self.obs.dtype,).squeeze()
+		self.mb_obs = np.asarray(self.mb_obs, dtype=self.obs.dtype).squeeze()
+		self.mb_domains = np.asarray(self.mb_domains, dtype=self.domain.dtype).squeeze(axis=(0,2))
 		self.mb_rewards = np.asarray(self.mb_rewards, dtype=np.float32).squeeze()
 		self.mb_actions = np.asarray(self.mb_actions).squeeze()
 		self.mb_values = np.asarray(self.mb_values, dtype=np.float32).squeeze()
@@ -644,6 +659,7 @@ class MlshExplorer:
 
 		if self.nacts > 1:
 			self.mb_obs = self.mb_obs.swapaxes(0, 1)
+			self.mb_domains = self.mb_domains.swapaxes(0, 1)
 			self.mb_rewards = self.mb_rewards.swapaxes(0, 1)
 			self.mb_actions = self.mb_actions.swapaxes(0, 1)
 			self.mb_values = self.mb_values.swapaxes(0, 1)
@@ -653,7 +669,7 @@ class MlshExplorer:
 		# From baselines' ppo2 runner():
 		# Calculate returns
 
-		last_values = self.master.value(self.obs)
+		last_values = self.master.value(self.obs, self.domain)
 
 		mb_returns = np.zeros_like(self.mb_rewards)
 		mb_advs = np.zeros_like(self.mb_rewards)
@@ -671,8 +687,8 @@ class MlshExplorer:
 		mb_returns[:] = mb_advs + self.mb_values
 		# Swap and flatten axis 0 and 1
 		if self.nacts > 1:
-			self.mb_obs, mb_returns, self.mb_dones, self.mb_actions, self.mb_values, self.mb_neglogpacs = \
-				map(ppo2.sf01, (self.mb_obs, mb_returns, self.mb_dones, self.mb_actions, self.mb_values, self.mb_neglogpacs))
+			self.mb_obs, mb_returns, self.mb_dones, self.mb_actions, self.mb_values, self.mb_neglogpacs, self.mb_domains = \
+				map(ppo2.sf01, (self.mb_obs, mb_returns, self.mb_dones, self.mb_actions, self.mb_values, self.mb_neglogpacs, self.mb_domains))
 
 
 		#train model for multiple epoch in n minibacthes pr epoch
@@ -683,8 +699,11 @@ class MlshExplorer:
 			for start in range(0, self.batch, self.nbatch_train):
 				end = start + self.nbatch_train
 				mbinds = inds[start:end]
-				slices = (arr[mbinds] for arr in (self.mb_obs, mb_returns, self.mb_dones, self.mb_actions, self.mb_values, self.mb_neglogpacs))
-				self.master.train(self.lr, self.cliprange, *slices)
+				slices = (arr[mbinds] for arr in (self.mb_obs, mb_returns, self.mb_dones, self.mb_actions, self.mb_values, self.mb_neglogpacs, self.mb_domains))
+				slices = dict(zip(['obs', 'returns', 'masks', 'actions', 'values', 'neglogpacs', 'domains'], slices))
+				if not isinstance(self.master.train_model, policies.CnnPolicy_withDomain):
+					slices['domains'] = None
+				self.master.train(self.lr, self.cliprange, **slices)
 
 
 
@@ -693,18 +712,20 @@ class MlshExplorer:
 		self.lr *= self.lr_decay
 		self.cliprange *=  self.cl_decay
 
-		self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs = [[]], [[]], [[]], [[]], [[]], [[]]
+		self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs, \
+			self.mb_domains = [[]], [[]], [[]], [[]], [[]], [[]], [[]]
 
 	def get_action(self, state, env):
 
 		#self.obs[:] = env.obs
 
 		if self.t % self.time_dialation == 0:
-			self.cur_sub, master_values, _, master_neglogpacs = self.master.step(self.obs)
+			self.cur_sub, master_values, _, master_neglogpacs = self.master.step(self.obs, self.domain)
 			self.cur_sub = self.cur_sub.squeeze()
 			self.subs[self.cur_sub].init_trajectory(self.obs, None)
 
 			self.mb_obs[self.actor].append(self.obs.copy())
+			self.mb_domains[self.actor].append((self.domain.copy()))
 			self.mb_actions[self.actor].append(self.cur_sub)
 			self.mb_values[self.actor].append(master_values)
 			self.mb_neglogpacs[self.actor].append(master_neglogpacs)

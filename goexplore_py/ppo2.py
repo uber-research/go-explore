@@ -11,13 +11,16 @@ from baselines.common import explained_variance
 
 class Model(object):
 	def __init__(self, *, policy, ob_space, ac_space, nbatch_act, nbatch_train,
-				nsteps, ent_coef, vf_coef, max_grad_norm, name='model'):
+				nsteps, ent_coef, vf_coef, max_grad_norm, name='model', domain_shape=None):
 		sess = tf.get_default_session()
 
 		self.name = name
-
-		act_model = policy(sess, ob_space, ac_space, nbatch_act, 1, reuse=False, name=name)
-		train_model = policy(sess, ob_space, ac_space, nbatch_train, nsteps, reuse=True, name=name)
+		if domain_shape is None:
+			act_model = policy(sess, ob_space, ac_space, nbatch_act, 1, reuse=False, name=name)
+			train_model = policy(sess, ob_space, ac_space, nbatch_train, nsteps, reuse=True, name=name)
+		else:
+			act_model = policy(sess, ob_space, domain_shape, ac_space, nbatch_act, 1, reuse=False, name=name)
+			train_model = policy(sess, ob_space, domain_shape, ac_space, nbatch_train, nsteps, reuse=True, name=name)
 
 		A = train_model.pdtype.sample_placeholder([None])
 		ADV = tf.placeholder(tf.float32, [None])
@@ -51,7 +54,7 @@ class Model(object):
 		trainer = tf.train.AdamOptimizer(learning_rate=LR, epsilon=1e-5)
 		_train = trainer.apply_gradients(grads)
 
-		def train(lr, cliprange, obs, returns, masks, actions, values, neglogpacs, states=None):
+		def train(lr, cliprange, obs, returns, masks, actions, values, neglogpacs, states=None, domains=None):
 			advs = returns - values
 			advs = (advs - advs.mean()) / (advs.std() + 1e-8)
 			td_map = {train_model.X:obs, A:actions, ADV:advs, R:returns, LR:lr,
@@ -59,6 +62,8 @@ class Model(object):
 			if states is not None:
 				td_map[train_model.S] = states
 				td_map[train_model.M] = masks
+			if domains is not None:
+				td_map[train_model.G] = domains
 			return sess.run(
 				[pg_loss, vf_loss, entropy, approxkl, clipfrac, _train],
 				td_map

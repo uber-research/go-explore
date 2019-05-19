@@ -105,7 +105,9 @@ class Explore:
             pool_class=multiprocessing.Pool,
             reset_pool=False,
             batch_size=100,
-            reset_cell_on_update=False
+            reset_cell_on_update=False,
+            with_domain = False,
+            load_model = None
     ):
         global POOL, ENV
         self.env_info = env
@@ -125,10 +127,23 @@ class Explore:
         self.batch_size = batch_size
         self.explore_steps = explore_steps
         self.explorer = explorer_policy
+        self.with_domain = with_domain
 
         if self.explorer.__repr__() == 'mlsh':
             if isinstance(get_env().observation_space, gym.spaces.Box):
-                self.explorer.init_model(get_env(), masterPolicy=goexplore_py.policies.CnnPolicy, subPolicies=goexplore_py.policies.CnnPolicy)
+                if with_domain:
+                    y, x = get_env().env.unwrapped.observation_space.shape[0:2]
+                    x = x * self.env_info[1]['x_repeat'] // grid_info[-1].div
+                    y = y // grid_info[-1].div
+                    domain_shape = (y, x, 1)
+                    self.explorer.init_model(get_env(), domain_shape, masterPolicy=goexplore_py.policies.CnnPolicy_withDomain,
+                                             subPolicies=goexplore_py.policies.CnnPolicy)
+                    if load_model is not None:
+                        self.explorer.master.load(f'{load_model}/master')
+                        for sub in self.explorer.subs:
+                            sub.model.load(f'{load_model}/{sub}')
+                else:
+                    self.explorer.init_model(get_env(), masterPolicy=goexplore_py.policies.CnnPolicy, subPolicies=goexplore_py.policies.CnnPolicy)
             elif isinstance(get_env().observation_space, gym.spaces.MultiBinary):
                 self.explorer.init_model(get_env(), policy=goexplore_py.policies.MlpPolicy)
             else:
@@ -159,6 +174,21 @@ class Explore:
         self.summary = []
         self.IR = 0
         self.dones = 0
+
+
+        def empty_room():
+            y, x = get_env().env.unwrapped.observation_space.shape[0:2]
+            x = x * self.env_info[1]['x_repeat'] // grid_info[-1].div
+            y = y // grid_info[-1].div
+            domain_shape = (y, x,1)
+            return np.zeros(domain_shape, dtype=np.uint8)
+
+        self.domain_knowledge = defaultdict(empty_room)
+        if with_domain:
+
+            cell = self.grid[self.get_cell()].real_cell
+            self.domain_knowledge[0][cell.y][cell.x] += 1
+
 
 
     def make_env(self):
@@ -217,7 +247,7 @@ class Explore:
 
     def run_explorer(self, explorer, start_cell=None, max_steps=-1):
         global GRID
-        explorer.init_trajectory(self.state, None)
+        explorer.init_trajectory(self.state, self.domain_knowledge[self.get_real_cell().room])
         trajectory = []
         seen_cells = set()
         while True:
@@ -230,6 +260,7 @@ class Explore:
             if not isinstance(action, int):
                 action = action.squeeze()
             self.state, reward, done, _ = self.step(action)
+
             self.frames_true += 1
             self.frames_compute += 1
             trajectory.append(
@@ -240,10 +271,11 @@ class Explore:
                     self.get_real_cell(), None
                 )
             )
+
             #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
             if explorer.__repr__() == "mlsh":
 
-                e = {'done': done, 'observation': self.state}
+                e = {'done': done, 'observation': self.state, 'domain': self.domain_knowledge[trajectory[-1].real_pos.room]}
                 # if (max_steps > 0 and len(trajectory) >= max_steps):
                 #     e['done'] = 1
                 if not done and trajectory[-1].to.cell not in GRID and trajectory[-1].to.cell not in seen_cells:
@@ -406,6 +438,8 @@ class Explore:
             for i, elem in enumerate(end_trajectory):
                 potential_cell_key = elem.to.cell
                 self.selector.reached_state(elem)
+                if self.with_domain and elem.real_pos not in self.real_grid:
+                    self.domain_knowledge[elem.real_pos.room][elem.real_pos.y][elem.real_pos.x] += 1
                 self.real_grid.add(elem.real_pos)
 
                 if not isinstance(potential_cell_key, tuple) and potential_cell_key.level > 0:

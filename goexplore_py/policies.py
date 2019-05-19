@@ -16,6 +16,17 @@ def nature_cnn(unscaled_images):
     h3 = conv_to_fc(h3)
     return activ(fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2)))
 
+def domain_cnn(unscaled_images):
+
+
+    scaled_images = tf.cast(unscaled_images, tf.float32) / 255.
+    activ = tf.nn.relu
+    h = activ(conv(scaled_images, 'c1', nf=32, rf=4, stride=2, init_scale=np.sqrt(2)))
+    h2 = activ(conv(h, 'c2', nf=64, rf=3, stride=1, init_scale=np.sqrt(2)))
+    #h3 = activ(conv(h2, 'c3', nf=64, rf=3, stride=1, init_scale=np.sqrt(2)))
+    h3 = conv_to_fc(h2)
+    return activ(fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2)))
+
 class LnLstmPolicy(object):
     def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, nlstm=256, reuse=False, name='model'):
         nenv = nbatch // nsteps
@@ -135,19 +146,23 @@ class CnnPolicy(object):
 
 class CnnPolicy_withDomain(object):
 
-    def __init__(self, sess, ob_space, domain_ob , ac_space, nbatch, nsteps, reuse=False, name='model'): #pylint: disable=W0613
+    def __init__(self, sess, ob_space, domain_shape , ac_space, nbatch, nsteps, reuse=False, name='model'): #pylint: disable=W0613
 
         nh, nw, nc = ob_space.shape
         ob_shape = (nbatch, nh, nw, nc)
+        dh, dw, dc= domain_shape
+        domain_shape = (nbatch, dh, dw, dc)
         nact = ac_space.n
 
 
         X = tf.placeholder(tf.uint8, ob_shape) #obs
-        G = tf.placeholder(tf.uint8, domain_ob.shape)
+        G = tf.placeholder(tf.uint8, domain_shape)
         with tf.variable_scope(name, reuse=reuse):
-            h = nature_cnn(X)
-            d = nature_cnn(G)
-            c = tf.concat([h,d],0)
+            with tf.variable_scope('obs', reuse=reuse):
+                h = nature_cnn(X)
+            with tf.variable_scope('domain', reuse=reuse):
+                d = domain_cnn(G)
+            c = tf.concat([h,d],1)
             pi = fc(c, 'pi', nact, init_scale=0.01)
             vf = fc(c, 'v', 1)[:,0]
 
@@ -158,14 +173,15 @@ class CnnPolicy_withDomain(object):
         neglogp0 = self.pd.neglogp(a0)
         self.initial_state = None
 
-        def step(ob, *_args, **_kwargs):
-            a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob})
+        def step(ob, domain,  *_args, **_kwargs):
+            a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob, G:domain})
             return a, v, self.initial_state, neglogp
 
-        def value(ob, *_args, **_kwargs):
-            return sess.run(vf, {X:ob})
+        def value(ob, domain, *_args, **_kwargs):
+            return sess.run(vf, {X:ob, G:domain})
 
         self.X = X
+        self.G = G
         self.pi = pi
         self.vf = vf
         self.step = step
