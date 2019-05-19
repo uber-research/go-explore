@@ -13,6 +13,7 @@ from .montezuma_env import *
 from .utils import *
 import loky
 from tensorflow import summary
+from diverseExplorer import clipreward, IRonly
 
 class LPool:
     def __init__(self, n_cpus, maxtasksperchild=100):
@@ -86,7 +87,7 @@ class TrajectoryElement:
 
 POOL = None
 ENV = None
-GRID = None
+# GRID = None
 
 def get_env():
     return ENV
@@ -246,7 +247,7 @@ class Explore:
             return pos
 
     def run_explorer(self, explorer, start_cell=None, max_steps=-1):
-        global GRID
+        # global GRID
         explorer.init_trajectory(self.state, self.domain_knowledge[self.get_real_cell().room])
         trajectory = []
         seen_cells = set()
@@ -278,15 +279,19 @@ class Explore:
                 e = {'done': done, 'observation': self.state, 'domain': self.domain_knowledge[trajectory[-1].real_pos.room]}
                 # if (max_steps > 0 and len(trajectory) >= max_steps):
                 #     e['done'] = 1
-                if not done and trajectory[-1].to.cell not in GRID and trajectory[-1].to.cell not in seen_cells:
-                    e['reward'] = 1
-                    explorer.seen_state(e)
-                    self.IR += 1
-                    seen_cells.add(trajectory[-1].to.cell)
-                else:
-                    e['reward'] = 0
-                    explorer.seen_state(e)
 
+                # if trajectory[-1].to.cell not in GRID and trajectory[-1].to.cell not in seen_cells:
+                #     e['reward'] = 1 + np.clip(reward, -1, 1)
+                #     explorer.seen_state(e)
+                #     self.IR += 1
+                #     seen_cells.add(trajectory[-1].to.cell)
+                # else:
+                #     e['reward'] = 0 + np.clip(reward, -1, 1)
+                #     explorer.seen_state(e)
+                reward = clipreward(trajectory[-1].to.cell, reward, self.grid)
+                self.IR += reward
+                e['reward'] = reward
+                explorer.seen_state(e)
             else:
                 explorer.seen_state(trajectory[-1])
             if done:
@@ -375,10 +380,12 @@ class Explore:
         # NB: self.grid is uncessecary for process_cell, and might be
         # VERY large. We temporarily replace it with None so it doesn't
         # need to be serialized by the pool.
-        old_grid = self.grid
-        global GRID
-        GRID = old_grid
-        self.grid = None
+
+        # old_grid = self.grid
+        # global GRID
+        # GRID = old_grid
+        # self.grid = None
+
         self.IR = 0
         self.dones = 0
 
@@ -396,7 +403,7 @@ class Explore:
             POOL = self.pool_class(self.n_cpus)
         chosen_cells = [e.data for e in chosen_cells]
 
-        self.grid = old_grid
+        # self.grid = old_grid
 
         for ((_, cell, _, _, _, _), (old_traj, old_seen, old_chain)) in zip(chosen_cells, old_trajectories):
             if old_traj is not None:

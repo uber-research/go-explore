@@ -39,7 +39,7 @@ LOG_DIR = None
 
 TEST_OVERRIDE = True
 SAVE_MODEL = False
-test_dict = {'log_path': ["log/test/domain"], 'base_path':['./results/test/domain/'],
+test_dict = {'log_path': ["log/test/domain/clipReward"], 'base_path':['./results/test/domain/clipReward'],
 			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
 			 'nexp':[128], 'batch_size':[100], 'resolution': [16],
 			 'explore_steps':[100],
@@ -56,10 +56,10 @@ test_dict = {'log_path': ["log/test/domain"], 'base_path':['./results/test/domai
 		'cl_decay_master' :[1],
 		'warmup': [ 40],
 		'train': [  40],
-			 'with_domain': [True]}
+			 'with_domain': [True],
+			}
 TERM_CONDITION = True
 NSAMPLES = 4
-
 
 
 
@@ -113,7 +113,8 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		 train = 40,
 		 retrain_N = None,
 		 with_domain = False,
-		 load_model = None
+		 load_model = None,
+		 reward_function = 'clip'
 
 
 		 ):
@@ -239,7 +240,8 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		n_cpus=n_cpus,
 		batch_size=batch_size,
 		reset_cell_on_update=reset_cell_on_update,
-		with_domain=with_domain
+		with_domain=with_domain,
+		load_model=load_model
 	)
 
 	if seed_path is not None:
