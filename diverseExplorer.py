@@ -8,10 +8,10 @@ import gym
 from goexplore_py import ppo2, policies
 from baselines.common.atari_wrappers import *
 
-def clipreward(newcell, gameReward, grid):
-	return (newcell in grid) + np.clip(gameReward,-1,1)
-def IRonly(newcell, gameReward, grid):
-	return (newcell in grid)
+def clipreward(newcell, gameReward, grid, seen):
+	return ((newcell not in grid) and newcell not in seen) + np.clip(gameReward,-1,1)
+def IRonly(newcell, gameReward, grid, seen):
+	return (newcell not in grid) and (newcell not in seen)
 
 
 class strechedObSpaceWrapper(gym.ObservationWrapper):

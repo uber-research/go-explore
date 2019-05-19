@@ -291,6 +291,7 @@ class Explore:
                 reward = clipreward(trajectory[-1].to.cell, reward, self.grid)
                 self.IR += reward
                 e['reward'] = reward
+                seen_cells.add(trajectory[-1].to.cell)
                 explorer.seen_state(e)
             else:
                 explorer.seen_state(trajectory[-1])
