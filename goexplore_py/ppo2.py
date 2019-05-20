@@ -45,8 +45,8 @@ class Model(object):
 		approxkl = .5 * tf.reduce_mean(tf.square(neglogpac - OLDNEGLOGPAC))
 		clipfrac = tf.reduce_mean(tf.to_float(tf.greater(tf.abs(ratio - 1.0), CLIPRANGE)))
 		loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
-		with tf.variable_scope(name):
-			params = tf.trainable_variables()
+
+		params = tf.trainable_variables(scope=name)
 		grads = tf.gradients(loss, params)
 		if max_grad_norm is not None:
 			grads, _grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
