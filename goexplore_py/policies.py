@@ -95,6 +95,8 @@ class LstmPolicy(object):
         neglogp0 = self.pd.neglogp(a0)
         self.initial_state = np.zeros((nenv, nlstm*2), dtype=np.float32)
 
+
+
         def step(ob, state, mask):
             return sess.run([a0, v0, snew, neglogp0], {X:ob, S:state, M:mask})
 
@@ -130,6 +132,10 @@ class CnnPolicy(object):
         neglogp0 = self.pd.neglogp(a0)
         self.initial_state = None
 
+        # run_metadata = tf.Run_Metadata()
+        # run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        #run_opts = tf.RunOptions(report_tensor_allocations_upon_oom=True)
+
         def step(ob, *_args, **_kwargs):
             a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob})
             return a, v, self.initial_state, neglogp
@@ -142,6 +148,7 @@ class CnnPolicy(object):
         self.vf = vf
         self.step = step
         self.value = value
+        # self.metadata = run_metadata
 
 
 class CnnPolicy_withDomain(object):
@@ -173,6 +180,10 @@ class CnnPolicy_withDomain(object):
         neglogp0 = self.pd.neglogp(a0)
         self.initial_state = None
 
+        # run_metadata = tf.Run_Metadata()
+        # run_options =  tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        #run_opts = tf.RunOptions(report_tensor_allocations_upon_oom=True)
+
         def step(ob, domain,  *_args, **_kwargs):
             a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob, G:domain})
             return a, v, self.initial_state, neglogp
@@ -186,6 +197,7 @@ class CnnPolicy_withDomain(object):
         self.vf = vf
         self.step = step
         self.value = value
+        #self.metadata = run_metadata
 
 class MlpPolicy(object):
     def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, name='model'): #pylint: disable=W0613

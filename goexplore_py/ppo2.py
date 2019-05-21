@@ -15,50 +15,59 @@ class Model(object):
 		sess = tf.get_default_session()
 
 		self.name = name
-		if domain_shape is None:
-			act_model = policy(sess, ob_space, ac_space, nbatch_act, 1, reuse=False, name=name)
-			train_model = policy(sess, ob_space, ac_space, nbatch_train, nsteps, reuse=True, name=name)
-		else:
-			act_model = policy(sess, ob_space, domain_shape, ac_space, nbatch_act, 1, reuse=False, name=name)
-			train_model = policy(sess, ob_space, domain_shape, ac_space, nbatch_train, nsteps, reuse=True, name=name)
 
-		A = train_model.pdtype.sample_placeholder([None])
-		ADV = tf.placeholder(tf.float32, [None])
-		R = tf.placeholder(tf.float32, [None])
-		OLDNEGLOGPAC = tf.placeholder(tf.float32, [None])
-		OLDVPRED = tf.placeholder(tf.float32, [None])
-		LR = tf.placeholder(tf.float32, [])
-		CLIPRANGE = tf.placeholder(tf.float32, [])
 
-		neglogpac = train_model.pd.neglogp(A)
-		entropy = tf.reduce_mean(train_model.pd.entropy())
+		with tf.variable_scope(name):
+			if domain_shape is None:
+				act_model = policy(sess, ob_space, ac_space, nbatch_act, 1, reuse=False, name=f'{name}_policy')
+				train_model = policy(sess, ob_space, ac_space, nbatch_train, nsteps, reuse=True, name=f'{name}_policy')
+			else:
+				act_model = policy(sess, ob_space, domain_shape, ac_space, nbatch_act, 1, reuse=False,
+								   name=f'{name}_policy')
+				train_model = policy(sess, ob_space, domain_shape, ac_space, nbatch_train, nsteps, reuse=True,
+									 name=f'{name}_policy')
 
-		vpred = train_model.vf
-		vpredclipped = OLDVPRED + tf.clip_by_value(train_model.vf - OLDVPRED, - CLIPRANGE, CLIPRANGE)
-		vf_losses1 = tf.square(vpred - R)
-		vf_losses2 = tf.square(vpredclipped - R)
-		vf_loss = .5 * tf.reduce_mean(tf.maximum(vf_losses1, vf_losses2))
-		ratio = tf.exp(OLDNEGLOGPAC - neglogpac)
-		pg_losses = -ADV * ratio
-		pg_losses2 = -ADV * tf.clip_by_value(ratio, 1.0 - CLIPRANGE, 1.0 + CLIPRANGE)
-		pg_loss = tf.reduce_mean(tf.maximum(pg_losses, pg_losses2))
-		approxkl = .5 * tf.reduce_mean(tf.square(neglogpac - OLDNEGLOGPAC))
-		clipfrac = tf.reduce_mean(tf.to_float(tf.greater(tf.abs(ratio - 1.0), CLIPRANGE)))
-		loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
+			A = train_model.pdtype.sample_placeholder([None])
+			ADV = tf.placeholder(tf.float32, [None])
+			R = tf.placeholder(tf.float32, [None])
+			OLDNEGLOGPAC = tf.placeholder(tf.float32, [None])
+			OLDVPRED = tf.placeholder(tf.float32, [None])
+			LR = tf.placeholder(tf.float32, [])
+			CLIPRANGE = tf.placeholder(tf.float32, [])
 
-		params = tf.trainable_variables(scope=name)
-		grads = tf.gradients(loss, params)
-		if max_grad_norm is not None:
-			grads, _grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
-		grads = list(zip(grads, params))
-		trainer = tf.train.AdamOptimizer(learning_rate=LR, epsilon=1e-5)
-		_train = trainer.apply_gradients(grads)
+			neglogpac = train_model.pd.neglogp(A)
+			entropy = tf.reduce_mean(train_model.pd.entropy())
+
+			vpred = train_model.vf
+			vpredclipped = OLDVPRED + tf.clip_by_value(train_model.vf - OLDVPRED, - CLIPRANGE, CLIPRANGE)
+			vf_losses1 = tf.square(vpred - R)
+			vf_losses2 = tf.square(vpredclipped - R)
+			vf_loss = .5 * tf.reduce_mean(tf.maximum(vf_losses1, vf_losses2))
+			ratio = tf.exp(OLDNEGLOGPAC - neglogpac)
+			pg_losses = -ADV * ratio
+			pg_losses2 = -ADV * tf.clip_by_value(ratio, 1.0 - CLIPRANGE, 1.0 + CLIPRANGE)
+			pg_loss = tf.reduce_mean(tf.maximum(pg_losses, pg_losses2))
+			approxkl = .5 * tf.reduce_mean(tf.square(neglogpac - OLDNEGLOGPAC))
+			clipfrac = tf.reduce_mean(tf.to_float(tf.greater(tf.abs(ratio - 1.0), CLIPRANGE)))
+			loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
+
+			params = tf.trainable_variables(scope=name)
+			grads = tf.gradients(loss, params)
+			if max_grad_norm is not None:
+				grads, _grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
+			grads = list(zip(grads, params))
+			trainer = tf.train.AdamOptimizer(learning_rate=LR, epsilon=1e-5)
+			_train = trainer.apply_gradients(grads)
+
+		# run_metadata = tf.RunMetadata()
+		# run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+		#run_options = tf.RunOptions(report_tensor_allocations_upon_oom=True)
 
 		def train(lr, cliprange, obs, returns, masks, actions, values, neglogpacs, states=None, domains=None):
 			advs = returns - values
 			advs = (advs - advs.mean()) / (advs.std() + 1e-8)
 			td_map = {train_model.X:obs, A:actions, ADV:advs, R:returns, LR:lr,
-					CLIPRANGE:cliprange, OLDNEGLOGPAC:neglogpacs, OLDVPRED:values}
+					  CLIPRANGE:cliprange, OLDNEGLOGPAC:neglogpacs, OLDVPRED:values}
 			if states is not None:
 				td_map[train_model.S] = states
 				td_map[train_model.M] = masks
@@ -70,6 +79,8 @@ class Model(object):
 			)[:-1]
 		self.loss_names = ['policy_loss', 'value_loss', 'policy_entropy', 'approxkl', 'clipfrac']
 
+		reset_op = tf.variables_initializer(params)
+
 		def save(save_path):
 			ps = sess.run(params)
 			joblib.dump(ps, save_path)
@@ -80,10 +91,11 @@ class Model(object):
 			for p, loaded_p in zip(params, loaded_params):
 				restores.append(p.assign(loaded_p))
 			sess.run(restores)
-			# If you want to load weights, also save/load observation scaling inside VecNormalize
+		# If you want to load weights, also save/load observation scaling inside VecNormalize
 
 		def reset():
-			sess.run(tf.initialize_variables(params))
+			sess.run(reset_op)
+			pass
 
 
 		self.train = train
@@ -95,6 +107,7 @@ class Model(object):
 		self.save = save
 		self.load = load
 		self.reset = reset
+		# self.metadata = run_metadata
 
 		tf.global_variables_initializer().run(session=sess) #pylint: disable=E1101
 

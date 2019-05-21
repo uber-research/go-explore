@@ -281,7 +281,7 @@ class PPOExplorer_v2:
 		return 'ppo'
 
 class PPOExplorer_v3:
-	def __init__(self, actors,  nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1, gamma=0.99, lam=0.95, name='model', nframes=4):
+	def __init__(self, actors,  nexp, lr, lr_decay=1, cl_decay=1, nminibatches=4, n_tr_epochs=4, cliprange=0.1, gamma=0.99, lam=0.95, name='model', nframes=4, ent_coef=0.01):
 
 
 		self.nacts = actors
@@ -300,6 +300,7 @@ class PPOExplorer_v3:
 		self.done = [False for _ in range(1)]
 		self.gamma = gamma
 		self.lam = lam
+		self.ent_coef = ent_coef
 		self.nframes = nframes
 
 
@@ -328,7 +329,7 @@ class PPOExplorer_v3:
 		ob_space = env.observation_space
 		ac_space = env.action_space
 		self.model = ppo2.Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
-								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
+								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=self.ent_coef, vf_coef=1,
 								max_grad_norm=0.5, name=self.name)
 		self.obs = np.zeros((1,) + ob_space.shape, dtype=self.model.train_model.X.dtype.name)
 
@@ -467,7 +468,7 @@ class PPOExplorer_v3:
 class MlshExplorer:
 	def __init__(self, nsubs, timedialation, warmup_T, train_T,  actors, nexp, lr_mas, lr_sub, retrain_N = None,
 				 lr_decay=1., cl_decay=1., lr_decay_sub=1., cl_decay_sub=1., nminibatches=4, n_tr_epochs=4,
-				 cliprange_mas=0.1, cliprange_sub = 0.1, gamma=0.99, lam=0.95):
+				 cliprange_mas=0.1, cliprange_sub = 0.1, gamma=0.99, lam=0.95, ent_m=0.01, ent_s=0.01):
 
 
 
@@ -492,13 +493,14 @@ class MlshExplorer:
 		self.done = [False for _ in range(1)]
 		self.gamma = gamma
 		self.lam = lam
+		self.ent = ent_m
 		self.n_train_epoch = n_tr_epochs
 		self.cliprange = cliprange_mas
 
 		# MLSH
 		self.master = None
 		self.subs = [PPOSub(actors,  nexp*timedialation, lr_sub, lr_decay_sub, cl_decay_sub, nminibatches, n_tr_epochs, cliprange_sub,
-									gamma, lam, name=f'Sub_{i}') for i in range(nsubs)]
+									gamma, lam, name=f'Sub_{i}', ent=ent_s) for i in range(nsubs)]
 		self.nsubs = nsubs
 		self.time_dialation = timedialation
 		self.warm_up_T = warmup_T
@@ -531,12 +533,12 @@ class MlshExplorer:
 		if  masterPolicy == policies.CnnPolicy_withDomain: #isinstance(masterPolicy., policies.CnnPolicy_withDomain):
 			assert domain_shape is not None, Exception('domain policy but no domain shape suplied')
 			self.master = ppo2.Model(policy=masterPolicy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
-									 nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
+									 nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=self.ent, vf_coef=1,
 									 max_grad_norm=0.5, name='Master', domain_shape=domain_shape)
 			self.domain = np.zeros((1,) + domain_shape, dtype=self.master.train_model.G.dtype.name)
 		else:
 			self.master = ppo2.Model(policy=masterPolicy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
-								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
+								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=self.ent, vf_coef=1,
 								max_grad_norm=0.5, name='Master')
 		for sub in self.subs:
 			sub.init_model(ob_space=ob_space, ac_space=env.action_space, policy=subPolicies)
@@ -749,6 +751,7 @@ class MlshExplorer:
 		self.mb_obs, self.mb_rewards, self.mb_actions, self.mb_values, self.mb_dones, self.mb_neglogpacs = [[]], [[]], [[]], [[]], [[]], [[]]
 		self.exp = 0
 		self.t = 0
+		self.actor = 0
 		self.cliprange = self.master_cl
 		self.lr = self.master_lr
 		self.master.reset()
@@ -761,7 +764,7 @@ class MlshExplorer:
 
 class PPOSub:
 	def __init__(self, actors, nexp, lr, lr_decay=1., cl_decay=1., nminibatches=4, n_tr_epochs=4, cliprange=0.1,
-				 gamma=0.99, lam=0.95, name='model'):
+				 gamma=0.99, lam=0.95, name='model', ent=0.01):
 
 		self.nacts = actors
 		self.actor = 0
@@ -779,6 +782,7 @@ class PPOSub:
 		self.done = [False for _ in range(1)]
 		self.gamma = gamma
 		self.lam = lam
+		self.ent = ent
 
 		self.n_train_epoch = n_tr_epochs
 		self.cliprange = cliprange
@@ -789,10 +793,10 @@ class PPOSub:
 
 		self.name = name
 
-	def init_model(self, ob_space, ac_space, policy=policies.CnnPolicy):
+	def init_model(self, ob_space, ac_space, policy=policies.CnnPolicy, ent_coef=0.01):
 
 		self.model = ppo2.Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
-								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
+								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=self.ent, vf_coef=1,
 								max_grad_norm=0.5, name=self.name)
 		self.obs = np.zeros((1,) + ob_space.shape, dtype=self.model.train_model.X.dtype.name)
 

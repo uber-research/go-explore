@@ -145,6 +145,11 @@ class Explore:
                             sub.model.load(f'{load_model}/{sub}')
                 else:
                     self.explorer.init_model(get_env(), masterPolicy=goexplore_py.policies.CnnPolicy, subPolicies=goexplore_py.policies.CnnPolicy)
+            else:
+                raise Exception("Unkown observation space")
+        elif self.explorer.__repr__() == 'ppo':
+            if isinstance(get_env().observation_space, gym.spaces.Box):
+                self.explorer.init_model(get_env(), policy=goexplore_py.policies.CnnPolicy)
             elif isinstance(get_env().observation_space, gym.spaces.MultiBinary):
                 self.explorer.init_model(get_env(), policy=goexplore_py.policies.MlpPolicy)
             else:
@@ -274,7 +279,7 @@ class Explore:
             )
 
             #assert trajectory[-1].to.restore is not None, "Failed to assign restore in trajectory"
-            if explorer.__repr__() == "mlsh":
+            if explorer.__repr__() == "mlsh" or explorer.__repr__() == "ppo":
 
                 e = {'done': done, 'observation': self.state, 'domain': self.domain_knowledge[trajectory[-1].real_pos.room]}
                 # if (max_steps > 0 and len(trajectory) >= max_steps):

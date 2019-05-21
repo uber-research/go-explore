@@ -37,7 +37,7 @@ PROFILER = None
 
 LOG_DIR = None
 
-TEST_OVERRIDE = True
+TEST_OVERRIDE = False
 SAVE_MODEL = False
 test_dict = {'log_path': ["log/test/domain/clipreward"], 'base_path':['./results/test/domain/clipreward'],
 			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
@@ -56,7 +56,9 @@ test_dict = {'log_path': ["log/test/domain/clipreward"], 'base_path':['./results
 		'cl_decay_master' :[1],
 		'warmup': [ 40],
 		'train': [  40],
-			 'with_domain': [True]
+			 'with_domain': [True],
+			 'ent_mas':[0.01],
+			 'ent_sub':[0.01]
 			}
 TERM_CONDITION = True
 NSAMPLES = 4
@@ -114,7 +116,9 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		 retrain_N = None,
 		 with_domain = False,
 		 load_model = None,
-		 reward_function = 'clip'
+		 reward_function = 'clip',
+		 ent_mas = 0.01,
+		 ent_sub = 0.01
 
 
 		 ):
@@ -134,7 +138,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 			nexp = explore_steps
 		explorer = PPOExplorer(actors=actors, nexp=nexp, lr=lr, lr_decay=lr_decay,
 							   cliprange=cliprange, cl_decay=cl_decay, n_tr_epochs=n_tr_epochs,
-							   nminibatches=mbatch, gamma=gamma, lam=lam)
+							   nminibatches=mbatch, gamma=gamma, lam=lam, ent_coef=ent_sub)
 		# if game == 'nchain':
 		# 	explorer.init_model(env="NChain-v0", policy=MlpPolicy)
 		# else:
@@ -153,7 +157,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		explorer = MlshExplorer(nsubs=nsubs, timedialation=timedialation, warmup_T=nexp*warmup, train_T=nexp*train,
 								actors=actors, nexp=nexp//timedialation, lr_mas=master_lr, lr_sub=lr, lr_decay=lr_decay_master,
 								lr_decay_sub=lr_decay, cl_decay=cl_decay_master, cl_decay_sub=cl_decay, n_tr_epochs=n_tr_epochs,
-								nminibatches=mbatch, gamma=gamma, lam=lam, cliprange_mas=master_cl, cliprange_sub=cliprange, retrain_N=retrain_N)
+								nminibatches=mbatch, gamma=gamma, lam=lam, cliprange_mas=master_cl, cliprange_sub=cliprange, retrain_N=retrain_N, ent_m=ent_mas, ent_s=ent_sub)
 
 
 
@@ -290,7 +294,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 		logDir = f'{logDir}_{time.time()}'
 		global LOG_DIR
 		LOG_DIR= logDir
-		summaryWriter = summary.FileWriter(logdir=logDir, flush_secs=20)
+		summaryWriter = summary.FileWriter(logdir=logDir, flush_secs=120, graph=sess.graph)
 		keys_found = []
 		try:
 			while should_continue():
@@ -324,9 +328,16 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 					entry.append(summary.Summary.Value(tag="Key_dist", histo=hist))
 					entry.append(summary.Summary.Value(tag="Level_dist", histo=histlvl))
 				entry.append(summary.Summary.Value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
+				bytes = sess.run(tf.contrib.memory_stats.MaxBytesInUse())
+				entry.append(summary.Summary.Value(tag="Memory Use", simple_value=bytes))
 
 				entry.extend(expl.summary)
 				summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
+
+				# summaryWriter.add_run_metadata(expl.explorer.master.metadata, 'master_metadata', global_step=expl.frames_compute + old_compute)
+				# for sub in expl.explorer.subs:
+				# 	summaryWriter.add_run_metadata(sub.model.metadata, f'{sub}_metadata',
+				# 							   global_step=expl.frames_compute + old_compute)
 				expl.summary = []
 
 				# In some circumstances (see comments), save a checkpoint and some pictures

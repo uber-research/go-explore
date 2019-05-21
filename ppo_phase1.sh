@@ -18,7 +18,8 @@
     --max_compute_steps=40000000 \
     --remember_rooms \
     --expl='ppo' \
-    --log_path='log/it_1_no_parallel'
+    --log_path='log/'
+    --save_model
 #--pictures \
 	#--pp \
 	#--ip \
