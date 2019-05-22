@@ -91,8 +91,8 @@ def clip(a, m, M):
 
 class MyMontezuma:
     def __init__(self, check_death: bool = True, unprocessed_state: bool = False, score_objects: bool = False,
-                 x_repeat=2, objects_from_pixels=True, objects_remember_rooms=False, only_keys=False):  # TODO: version that also considers the room objects were found in
-        self.env = FrameStack(WarpFrame(gym.make('MontezumaRevengeDeterministic-v4')), 4)
+                 x_repeat=2, objects_from_pixels=True, objects_remember_rooms=False, only_keys=False, stackedFrames = 20):  # TODO: version that also considers the room objects were found in
+        self.env = FrameStack(WarpFrame(gym.make('MontezumaRevengeDeterministic-v4')),stackedFrames)
         self.env.reset()
         self.score_objects = score_objects
         self.ram = None

@@ -39,7 +39,7 @@ LOG_DIR = None
 
 TEST_OVERRIDE = False
 SAVE_MODEL = False
-test_dict = {'log_path': ["log/test/domain/clipreward"], 'base_path':['./results/test/domain/clipreward'],
+test_dict = {'log_path': ["log/frameStack20/domain/clipreward"], 'base_path':['./results/frameStack20/domain/clipreward'],
 			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
 			 'nexp':[128], 'batch_size':[100], 'resolution': [16],
 			 'explore_steps':[100],
@@ -58,7 +58,7 @@ test_dict = {'log_path': ["log/test/domain/clipreward"], 'base_path':['./results
 		'train': [  40],
 			 'with_domain': [True],
 			 'ent_mas':[0.01],
-			 'ent_sub':[0.01]
+			 'ent_sub':[0.01],
 			}
 TERM_CONDITION = True
 NSAMPLES = 4
@@ -290,11 +290,13 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				f'_lrM_{master_lr}_lrDM_{lr_decay_master}_clM_{master_cl}' \
 				f'_clDM_{cl_decay_master}_lrS_{lr}_lrDS_{lr_decay}_clS_{cliprange}_clDS_{cl_decay}' \
 				f'_rt_{retrain_N}' \
-				f'_mb_{mbatch}_trEp_{n_tr_epochs}_gam_{gamma}_lam_{lam}'
+				f'_mb_{mbatch}_trEp_{n_tr_epochs}_gam_{gamma}_lam_{lam}_entM_{ent_mas}_entS_{ent_sub}'
 		logDir = f'{logDir}_{time.time()}'
 		global LOG_DIR
 		LOG_DIR= logDir
-		summaryWriter = summary.FileWriter(logdir=logDir, flush_secs=120, graph=sess.graph)
+		summaryWriter = summary.FileWriter(logdir=logDir, flush_secs=120)
+		if explorer.__repr__() == 'ppo' or explorer.__repr__() == 'mlsh':
+			summaryWriter.add_graph(graph=sess.graph)
 		keys_found = []
 		try:
 			while should_continue():
@@ -343,8 +345,8 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				# In some circumstances (see comments), save a checkpoint and some pictures
 				if ((not seen_level_1 and expl.seen_level_1) or  # We have solved level 1
 						old == 0 or  # It is the first iteration
-						old // THRESH_TRUE != expl.frames_true // THRESH_TRUE or  # We just passed the THRESH_TRUE threshold
-						old_compute // THRESH_COMPUTE != expl.frames_compute // THRESH_COMPUTE or  # We just passed the THRESH_COMPUTE threshold
+						old // THRESH_TRUE != (expl.frames_true + old)// THRESH_TRUE or  # We just passed the THRESH_TRUE threshold
+						old_compute // THRESH_COMPUTE != (expl.frames_compute + old_compute) // THRESH_COMPUTE or  # We just passed the THRESH_COMPUTE threshold
 						not should_continue()):  # This is the last iteration
 
 					# Quick bookkeeping, printing update
