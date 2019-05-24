@@ -39,9 +39,9 @@ LOG_DIR = None
 
 TEST_OVERRIDE = False
 SAVE_MODEL = False
-test_dict = {'log_path': ["log/frameStack20/domain/clipreward"], 'base_path':['./results/frameStack20/domain/clipreward'],
+test_dict = {'log_path': ["log/withRando/frameStack20/domain/smoothReward"], 'base_path':['./results/withRando/frameStack20/domain/smoothReward'],
 			 'explorer':['mlsh'], 'game':['montezuma'], 'actors':[1],
-			 'nexp':[128], 'batch_size':[100], 'resolution': [16],
+			 'nexp':[1024], 'batch_size':[100], 'resolution': [16],
 			 'explore_steps':[100],
 		'lr': [1.0e-03], 'lr_decay':[ 1],
 		'cliprange':[0.1], 'cl_decay': [ 1],
@@ -49,12 +49,12 @@ test_dict = {'log_path': ["log/frameStack20/domain/clipreward"], 'base_path':['.
 		'mbatch': [4],
 		'gamma':[0.999], 'lam':[0.95],
 		'nsubs' : [4],
-		'timedialation': [8],
+		'timedialation': [32],
 		'master_lr': [0.01],
 		'lr_decay_master': [1],
 		'master_cl': [0.1],
 		'cl_decay_master' :[1],
-		'warmup': [ 40],
+		'warmup': [ 80],
 		'train': [  40],
 			 'with_domain': [True],
 			 'ent_mas':[0.01],
@@ -316,7 +316,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				n_iters += 1
 
 
-				entry = [summary.Summary.Value(tag='Rooms_Found', simple_value=len(get_env().rooms))]
+				entry = [summary.Summary.Value(tag='Rooms_Found', simple_value=len(Counter( (e.room, e.level) for e in expl.grid).keys()))]
 				entry.append(summary.Summary.Value(tag='Cells', simple_value=len(expl.grid)))
 				entry.append(summary.Summary.Value(tag='Top_score', simple_value=max(e.score for e in expl.grid.values())))
 				if game != "nchain":
@@ -332,6 +332,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				entry.append(summary.Summary.Value(tag="Avg traj-len", simple_value=(expl.frames_compute/batch_size)/explore_steps))
 				bytes = sess.run(tf.contrib.memory_stats.MaxBytesInUse())
 				entry.append(summary.Summary.Value(tag="Memory Use", simple_value=bytes))
+				entry.append(summary.Summary.Value(tag="Rando percent", simple_value=np.mean(expl.explorer.randoPercent)))
 
 				entry.extend(expl.summary)
 				summaryWriter.add_summary(summary=summary.Summary(value=entry), global_step=expl.frames_compute + old_compute)
@@ -448,6 +449,7 @@ def _run(resolution=16, score_objects=True, mean_repeat=20,
 				expl.explorer.master.save(f'{base_path}/master')
 				expl.explorer.master.save(f'{logDir}/master')
 				for sub in expl.explorer.subs:
+
 					sub.model.save(f'{base_path}/{sub}')
 					sub.model.save(f'{logDir}/{sub}')
 			#print(expl.explorer.__repr__())

@@ -13,7 +13,7 @@ from .montezuma_env import *
 from .utils import *
 import loky
 from tensorflow import summary
-from diverseExplorer import clipreward, IRonly
+from diverseExplorer import clipreward, IRonly, smoothReward
 
 class LPool:
     def __init__(self, n_cpus, maxtasksperchild=100):
@@ -174,6 +174,7 @@ class Explore:
         self.grid[self.get_cell()].score = 0
         self.grid[self.get_cell()].exact_pos = self.get_pos()
         self.grid[self.get_cell()].real_cell = self.get_real_cell()
+        self.grid[self.get_cell()].seen_times = 1
         self.real_grid = set()
         self.pos_cache = None
         self.reset_cell_on_update = reset_cell_on_update
@@ -293,7 +294,7 @@ class Explore:
                 # else:
                 #     e['reward'] = 0 + np.clip(reward, -1, 1)
                 #     explorer.seen_state(e)
-                reward = clipreward(trajectory[-1].to.cell, reward, self.grid, seen_cells)
+                reward = smoothReward(trajectory[-1].to.cell, reward, self.grid, seen_cells)
                 self.IR += reward
                 e['reward'] = reward
                 seen_cells.add(trajectory[-1].to.cell)

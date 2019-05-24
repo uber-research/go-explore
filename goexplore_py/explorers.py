@@ -41,7 +41,7 @@ class RepeatedRandomExplorer:
     def seen_state(self, e):
         pass
 
-    def get_action(self, state, env):
+    def get_action(self, state, env, *args, **kwargs):
         if self.remaining <= 0:
             self.action = random.randint(0, env.action_space.n - 1)
             # Note, this is equivalent to selecting an action and then repeating it

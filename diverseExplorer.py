@@ -4,14 +4,25 @@
 import tensorflow as tf
 import numpy as np
 import gym
+from collections import deque
 
-from goexplore_py import ppo2, policies
+from goexplore_py import ppo2, policies, explorers
 from baselines.common.atari_wrappers import *
 
 def clipreward(newcell, gameReward, grid, seen):
 	return ((newcell not in grid) and newcell not in seen) + np.clip(gameReward,-1,1)
 def IRonly(newcell, gameReward, grid, seen):
 	return (newcell not in grid) and (newcell not in seen)
+def smoothReward(newcell, gameReward, grid, seen):
+	reward = 0
+	if newcell not in seen:
+		if newcell in grid:
+			reward += 1/grid[newcell].seen_times
+		else:
+			reward += 1
+
+	reward += np.clip(gameReward,-1,1)
+	return reward
 
 
 class strechedObSpaceWrapper(gym.ObservationWrapper):
@@ -501,6 +512,7 @@ class MlshExplorer:
 		self.master = None
 		self.subs = [PPOSub(actors,  nexp*timedialation, lr_sub, lr_decay_sub, cl_decay_sub, nminibatches, n_tr_epochs, cliprange_sub,
 									gamma, lam, name=f'Sub_{i}', ent=ent_s) for i in range(nsubs)]
+		self.subs.append(explorers.RepeatedRandomExplorer(20)) #add random explorer
 		self.nsubs = nsubs
 		self.time_dialation = timedialation
 		self.warm_up_T = warmup_T
@@ -516,6 +528,8 @@ class MlshExplorer:
 		self.obs = None
 		self.domain = []
 		self.env = None
+
+		self.randoPercent = deque(maxlen=1000)
 
 	def init_model(self, env, domain_shape=None, masterPolicy=policies.CnnPolicy, subPolicies=policies.CnnPolicy):
 		# self.env = gym.make(env)
@@ -541,7 +555,8 @@ class MlshExplorer:
 								nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=self.ent, vf_coef=1,
 								max_grad_norm=0.5, name='Master')
 		for sub in self.subs:
-			sub.init_model(ob_space=ob_space, ac_space=env.action_space, policy=subPolicies)
+			if isinstance(sub, PPOSub):
+				sub.init_model(ob_space=ob_space, ac_space=env.action_space, policy=subPolicies)
 		# self.subs = [ppo2.Model(policy=masterPolicy, ob_space=ob_space, ac_space=ac_space, nbatch_act=1,
 		# 						nbatch_train=self.nbatch_train, nsteps=self.nsteps, ent_coef=0.01, vf_coef=1,
 		# 						max_grad_norm=0.5, name=f'Sub_{i}') for i in range(self.nsubs)]
@@ -601,6 +616,7 @@ class MlshExplorer:
 
 
 		self.t += 1
+
 		#self.obs[:], reward, self.done, _ = self.env.step(self.mb_actions[self.actor][-1].squeeze())
 
 		self.obs[:] = e['observation']
@@ -623,6 +639,7 @@ class MlshExplorer:
 			if not self.warm_up_done and self.t >= self.warm_up_T:
 				self.warm_up_done = True
 				self.t = 0
+
 			self.mb_rewards[self.actor].append(self.reward)
 			self.reward = 0
 			self.exp += 1
@@ -743,7 +760,12 @@ class MlshExplorer:
 			self.mb_neglogpacs[self.actor].append(master_neglogpacs)
 			self.mb_dones[self.actor].append(self.done)
 
-		actions = self.subs[self.cur_sub].get_action(self.obs, self.warm_up_done)
+			self.randoPercent.append(self.cur_sub == (len(self.subs)-1))
+
+
+
+		actions = self.subs[self.cur_sub].get_action(self.obs, env=env, warmup_done=self.warm_up_done)
+
 
 		return actions
 
@@ -906,7 +928,7 @@ class PPOSub:
 																													   []], [
 																													   []]
 
-	def get_action(self, state, warmup_done):
+	def get_action(self, state, env, warmup_done):
 
 		self.obs[:] = state
 
