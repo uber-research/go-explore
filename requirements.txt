@@ -31,7 +31,7 @@ mpi4py==3.0.0
 numpy==1.16.0
 opencv-python==4.0.0.21
 pandas==0.24.0
-Pillow==5.4.1
+Pillow==6.2.0
 progressbar2==3.39.2
 protobuf==3.6.1
 psutil==5.5.0
