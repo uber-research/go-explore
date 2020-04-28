@@ -1,5 +1,7 @@
 # Go-Explore
 
+Code to be updated with the latest version corresponding to the new paper soon.
+
 Paper located at: [arxiv.org/abs/1901.10995](https://arxiv.org/abs/1901.10995)
 
 ## Requirements
