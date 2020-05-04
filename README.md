@@ -2,7 +2,16 @@
 
 Code to be updated with the latest version corresponding to the new paper soon.
 
-Paper located at: [arxiv.org/abs/1901.10995](https://arxiv.org/abs/1901.10995)
+The paper: [*Go-Explore: a New Approach for Hard-Exploration Problems*
+](https://arxiv.org/abs/1901.10995) can be cited as follows
+```
+@article{ecoffet2019go,
+  title={Go-explore: a new approach for hard-exploration problems},
+  author={Ecoffet, Adrien and Huizinga, Joost and Lehman, Joel and Stanley, Kenneth O and Clune, Jeff},
+  journal={arXiv preprint arXiv:1901.10995},
+  year={2019}
+}
+```
 
 ## Requirements
 
@@ -19,7 +28,7 @@ able to run all phases. Unless otherwise specified, libraries can be installed u
 
 These libraries are sufficient to run Go-Explore Phase 1 with custom environments, which you may model after `goexplore_py/pitfall_env.py` and `goexplore_py/montezuma_env.py`.
 
-The ALE/atari-py is not part of Go-Explore. If you are interested in running Go-Explore on Atari environments (for example to reproduce our experiments), you may install `gym[atari]` instead of just `gym`. Doing so will install atari-py. atari-py is licensed under GPLv2.
+The [ALE/atari-py](https://github.com/openai/atari-py) is not part of Go-Explore. If you are interested in running Go-Explore on Atari environments (for example to reproduce our experiments), you may install `gym[atari]` instead of just `gym`. Doing so will install atari-py. atari-py is licensed under GPLv2.
 
 **Additional libraries for demo generation:**
 - ffmpeg (non-Python library, install using package manager)
