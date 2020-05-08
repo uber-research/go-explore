@@ -1,0 +1,30 @@
+<!-- ======================================================
+    Model       :: Collection of Boxes
+        
+    Mujoco      :: Advanced physics simulation engine
+        Source      : www.roboti.us
+        Version     : 1.41
+        Released    : 22Aug'16
+        
+    Author      :: Vikash Kumar
+        Contacts    : kumar@roboti.us
+        Last edits  : 05Oct'16
+====================================================== -->
+<mujocoinclude>
+	<asset>
+		<texture file="texture/wood.png"/>
+		<material name="MatWood" texture="wood" specular="0.4" shininess=".1" texrepeat="3 3"/>
+		<material name="MatWoodR" texture="wood" specular="1" shininess=".3"  rgba="1 0.5 0.5 1"/>
+        <material name="MatWoodG" texture="wood" specular="1" shininess=".3"  rgba="0.2 1 0.2 1"/>
+        <material name="MatWoodB" texture="wood" specular="1" shininess=".3"/>
+	</asset>
+	
+	<default>
+        <default class="block">
+            <geom type="box" size="0.0125 0.0125 0.0125"/>
+        </default>
+		 <default class="free">
+            <joint type="hinge" damping="0" armature="0" limited="false"/>
+        </default>
+    </default>
+</mujocoinclude>

@@ -1,0 +1,13 @@
+tensorflow==1.15.2
+mpi4py
+gym[Atari]
+horovod
+baselines@git+https://github.com/openai/baselines@ea25b9e8b234e6ee1bca43083f8f3cf974143998
+Pillow
+imageio
+matplotlib
+loky
+joblib
+dataclasses
+opencv-python
+cloudpickle

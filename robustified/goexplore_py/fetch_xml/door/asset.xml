@@ -1,0 +1,19 @@
+<!-- ======================================================
+	Model 		:: Latch and door
+		
+	Mujoco		:: Advanced physics simulation engine
+		Source		: www.roboti.us
+		Version		: 1.41
+		Released 	: 22Aug'16
+		
+	Author		:: Vikash Kumar
+		Contacts 	: kumar@roboti.us
+		Last edits 	: 05Oct'16
+====================================================== -->
+<mujocoinclude>
+	<compiler angle="radian"/>
+    <asset>
+    	<texture name="wood" type="2d" file="texture/wood.png"/>
+		<material name="wood" texture="wood" reflectance="0.008" rgba="1 1 1 1"/>
+	</asset>
+</mujocoinclude>

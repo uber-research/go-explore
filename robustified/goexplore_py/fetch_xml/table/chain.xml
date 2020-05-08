@@ -1,0 +1,20 @@
+<!-- ======================================================
+    Model       :: Table
+        
+    Mujoco      :: Advanced physics simulation engine
+        Source      : www.roboti.us
+        Version     : 1.41
+        Released    : 22Aug'16
+        
+    Author      :: Vikash Kumar
+        Contacts    : kumar@roboti.us
+        Last edits  : 05Oct'16
+====================================================== -->
+<mujocoinclude>
+        <!--<geom contype="1" conaffinity="1" type="plane" material="table2d" pos="0 0 0" size=".5 .5 .025"/>
+		--><geom contype="1" conaffinity="1" type="box" material="tablecube" pos="0 0 -0.025" size=".8 .5 .025"/>
+		<geom contype="0" conaffinity="0" type="cylinder" fromto=".4 .4 -1.001 .4 .4 -0.001" size="0.04"/>
+		<geom contype="0" conaffinity="0" type="cylinder" fromto="-.4 .4 -1.001 -.4 .4 -0.001" size="0.04"/>
+		<geom contype="0" conaffinity="0" type="cylinder" fromto=".4 -.4 -1.001 .4 -.4 -0.001" size="0.04"/>
+		<geom contype="0" conaffinity="0" type="cylinder" fromto="-.4 -.4 -1.001 -.4 -.4 -0.001" size="0.04"/>
+</mujocoinclude>

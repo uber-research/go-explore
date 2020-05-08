@@ -1,0 +1,240 @@
+<!-- ======================================================
+    Model       :: Collection of Boxes
+        
+    Mujoco      :: Advanced physics simulation engine
+        Source      : www.roboti.us
+        Version     : 1.41
+        Released    : 22Aug'16
+        
+    Author      :: Vikash Kumar
+        Contacts    : kumar@roboti.us
+        Last edits  : 05Oct'16
+====================================================== -->
+<mujocoinclude>
+		<!--<geom type="plane" pos="0 0 0.001" size=".26 .13 .025" rgba=".5 .4 .2 1" />-->
+        <geom type="box" pos="0 0 0.08"     size="0.005 0.13 0.08" material="MatWood"/>
+        <geom type="box" pos="0 -0.13 0.04" size="0.27 0.01 0.04"  material="MatWood"/>
+        <geom type="box" pos="0 0.13 0.04"  size="0.27 0.01 0.04"  material="MatWood"/>
+        <geom type="box" pos="-0.26 0 0.04" size="0.01 0.12 0.04"  material="MatWood"/>
+        <geom type="box" pos="0.26 0 0.04"  size="0.01 0.12 0.04"  material="MatWood"/>
+
+      	<body name="blockL01" pos="-0.20 0.1 0.05" quat="1 0 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL02" pos="-0.17 0.1 0.05" quat="1 0 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+        
+        <body name="blockL03" pos="-0.14 0.1 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL04" pos="-0.11 0.1 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL05" pos="-0.08 0.1 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL06" pos="-0.04 0.1 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL07" pos="-0.04 0.1 0.1" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL08" pos="-0.20 0.07 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL09" pos="-0.17 0.07 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL10" pos="-0.14 0.07 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL11" pos="-0.11 0.07 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL12" pos="-0.08 0.07 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL13" pos="-0.04 0.07 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL14" pos="-0.04 0.07 0.1" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL15" pos="-0.20 0.04 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL16" pos="-0.17 0.04 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL17" pos="-0.14 0.04 0.05" quat="1 0 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL18" pos="-0.11 0.04 0.05" quat="1 0 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+        
+        <body name="blockL19" pos="-0.08 0.04 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL20" pos="-0.04 0.04 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL21" pos="-0.20 0 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL22" pos="-0.17 0 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL23" pos="-0.14 0 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL24" pos="-0.11 0 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL25" pos="-0.07 0 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL26" pos="-0.03 0 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL27" pos="-0.19 -0.03 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL28" pos="-0.03 -0.03 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL29" pos="-0.16 -0.03 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL30" pos="-0.13 -0.03 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL31" pos="-0.10 -0.03 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL32" pos="-0.06 -0.03 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL33" pos="-0.19 -0.06 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL34" pos="-0.03 -0.06 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL35" pos="-0.16 -0.06 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL36" pos="-0.13 -0.06 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL37" pos="-0.10 -0.06 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL38" pos="-0.06 -0.06 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL39" pos="-0.20 -0.1 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL40" pos="-0.17 -0.1 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL41" pos="-0.14 -0.1 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+
+        <body name="blockL42" pos="-0.11 -0.1 0.05" quat="1 1 0 0">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodR"/> 
+        </body>
+
+        <body name="blockL43" pos="-0.07 -0.1 0.05" quat="1 1 0 0.5">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodG"/> 
+        </body>
+
+        <body name="blockL44" pos="-0.03 -0.1 0.05">
+            <joint class="free"/>
+            <geom class="block" material="MatWoodB"/> 
+        </body>
+</mujocoinclude>

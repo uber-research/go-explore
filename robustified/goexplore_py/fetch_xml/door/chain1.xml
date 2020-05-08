@@ -1,0 +1,48 @@
+<!-- ======================================================
+	Model 		:: Latch and door
+		
+	Mujoco		:: Advanced physics simulation engine
+		Source		: www.roboti.us
+		Version		: 1.41
+		Released 	: 22Aug'16
+		
+	Author		:: Vikash Kumar
+		Contacts 	: kumar@roboti.us
+		Last edits 	: 05Oct'16
+====================================================== -->
+<mujocoinclude>
+        
+       <!--<light directional="false" cutoff="40" exponent="20" diffuse="1 1 1" specular="0 0 0" pos="0.3 -.1 1.5" dir="0 -.2 -1"/>-->
+		
+		<body name="frameR" pos="0.11 0.2 0.252">
+			<geom type="box" pos="0.55 0 0" size="0.03 0.05 0.28" material="wood" rgba=".9 .8 .9 1" contype="0" conaffinity="0"/>
+            
+			<body name="door" pos="0.27 0 0">
+				<inertial pos="0.0296816 -0.00152345 0" quat="0.701072 0 0 0.713091" mass="2.43455" diaginertia="0.0913751 0.0521615 0.043714"/>
+				<joint name="door_hinge" type="hinge" pos="0.2 0 0" axis="0 0 1" range="0 2.5" damping="1" limited="true" armature=".01" frictionloss="2"/>
+				<geom type="box" material="wood" pos="0.025 0 0" size="0.225 0.05 0.28" condim="3" friction="1 1 1"/>
+				<geom type="box" material="wood" pos="-0.15 -0.065 -0.051" size="0.05 0.015 0.01"/>
+				<geom type="box" material="wood" pos="-0.15 -0.065 0.051" size="0.05 0.015 0.01"/>
+				<geom type="box" material="wood" pos="-0.15 -0.09 0" size="0.05 0.011 0.06"/>
+				<geom type="box" pos="-0.15 -0.16 0" size="0.01 0.01 0.05" rgba=".8 .9 1 1"/>
+				
+				<body name="latch" pos="-0.16 -.065 0">
+					<inertial pos="0.00421615 -0.00101188 0" quat="0.503954 0.503954 0.496015 0.496015" mass="0.465708" diaginertia="0.00382767 0.0036416 0.000242359"/>
+					<geom type="box" material="wood"  rgba=".8 .6 .9 1" size="0.15 0.01 0.0375" condim="1"/>
+					<joint type="slide" pos="0 0 0" axis="1 0 0" range="0 .15" limited="true" frictionloss="10"/>
+					<geom type="box" pos="0.125 -0.02 0" size="0.01 0.02 0.035" rgba=".8 .9 1 1"/>
+				</body>
+			</body>
+		</body>
+
+        <body name="frameL" pos="0.11 0.2 0.252">
+			<geom type="box" material="wood" rgba=".9 .8 .9 1" size="0.05 0.05 0.28" condim="3"/>
+            <geom type="box" material="wood" rgba=".9 .8 .9 1" pos="0 -0.065 -0.051" size="0.05 0.015 0.01" condim="1"/>
+            <geom type="box" material="wood" rgba=".9 .8 .9 1" pos="0 -0.065 0.051" size="0.05 0.015 0.01" condim="1"/>
+            <geom type="box" material="wood" rgba=".9 .8 .9 1" pos="0 -0.09 0" size="0.05 0.011 0.06" condim="1"/>
+        </body>
+		
+		<!--<body name="annotation:outer_bound" pos="0.4 0.15 0.255">
+          <geom solref="0.008 1" solimp="0.95 0.95 0.01" margin="0.001" user="0" type="box" conaffinity="2" contype="4" pos="0 0 0" size="0.4 0.15 0.255" rgba="1 1 1 0.15" mass="0.0"/>
+        </body>-->
+</mujocoinclude>

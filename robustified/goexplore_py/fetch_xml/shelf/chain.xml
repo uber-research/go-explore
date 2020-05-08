@@ -1,0 +1,56 @@
+<!-- ======================================================
+    Model       :: Shelf
+        
+    Mujoco      :: Advanced physics simulation engine
+        Source      : www.roboti.us
+        Version     : 1.41
+        Released    : 22Aug'16
+        
+    Author      :: Vikash Kumar
+        Contacts    : kumar@roboti.us
+        Last edits  : 05Oct'16
+====================================================== -->
+<mujocoinclude>
+        <body pos="0.25 0.685 0.63">
+            <geom conaffinity="3" contype="4" name="table" rgba="0.6 0.6 0.6 1.0" size="0.25 0.625 0.03" type="box"/>
+        </body>
+        <body pos="0.25 0.685 0.03">
+            <geom conaffinity="3" contype="4" name="bottom" rgba="0.6 0.6 0.6 1.0" size="0.25 0.625 0.03" type="box"/>
+        </body>
+        <body pos="0.25 0.685 1.23">
+            <geom conaffinity="3" contype="4" name="top" rgba="0.6 0.6 0.6 1.0" size="0.25 0.625 0.03" type="box"/>
+        </body>
+        <body pos="0.25 0.03 0.63">
+            <geom conaffinity="3" contype="4" name="bar1" rgba="0.6 0.6 0.6 1.0" size="0.25 0.03 0.63" type="box"/>
+        </body>
+        <body pos="0.25 0.685 0.63">
+            <geom conaffinity="3" contype="4" name="bar2" rgba="0.6 0.6 0.6 1.0" size="0.25 0.03 0.63" type="box"/>
+        </body>
+        <body pos="0.25 1.34 0.63">
+            <geom conaffinity="3" contype="4" name="bar3" rgba="0.6 0.6 0.6 1.0" size="0.25 0.03 0.63" type="box"/>
+        </body>
+        <body pos="0 0.68 0.63">
+            <geom conaffinity="3" contype="4" name="back" rgba="0.2 0.2 0.2 1.0" size="0.03 0.685 0.635" type="box"/>
+        </body>
+
+        <body name="annotation:outer_bound" pos="0.25 0.685 0.63">
+            <geom conaffinity="2" contype="4" mass="0.0" pos="0 0 0" rgba="1 0 1 0.0" size="0.25 0.685 0.63" type="box"/>
+        </body>
+
+        <body name="annotation:inside_0" pos="0.25 0.3575 0.33">
+          <geom type="box" group="5" conaffinity="2" contype="4" pos="0 0 0" size="0.25 0.2975 0.27" rgba="1 0 0 0.1" mass="0.0"/>
+        </body>
+
+        <body name="annotation:inside_1" pos="0.25 0.3575 0.93">
+          <geom type="box" group="5" conaffinity="2" contype="4" pos="0 0 0" size="0.25 0.2975 0.27" rgba="1 0 0 0.1" mass="0.0"/>
+        </body>
+
+        <body name="annotation:inside_2" pos="0.25 1.0125 0.33">
+          <geom type="box" group="5" conaffinity="2" contype="4" pos="0 0 0" size="0.25 0.2975 0.27" rgba="1 0 0 0.1" mass="0.0"/>
+        </body>
+
+        <body name="annotation:inside_3" pos="0.25 1.0125 0.93">
+          <geom type="box" group="5" conaffinity="2" contype="4" pos="0 0 0" size="0.25 0.2975 0.27" rgba="1 0 0 0.1" mass="0.0"/>
+        </body>
+
+</mujocoinclude>

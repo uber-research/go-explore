@@ -1,0 +1,114 @@
+<!-- ======================================================
+	Model 		:: Fetch with teleOp environment
+		
+	Mujoco		:: Advanced physics simulation engine
+		Source		: www.roboti.us
+		Version		: 1.50
+		Released 	: 23Apr'17
+		
+	Author		:: Vikash Kumar
+		Contacts 	: vikash@cs.washington.edu
+		Last edits 	: 09May'18
+		
+	Copyright 2016 Vikash Kumar
+		Licensed under Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+====================================================== -->
+
+
+<mujoco model="fetch_objects(v150)">
+
+	<visual>
+        <quality shadowsize="2048"/>
+    	<map fogstart="6" fogend="10"/>
+    	<headlight diffuse="0.8 0.8 0.8" ambient="0.6 0.6 0.6" specular="0 0 0"/>
+    </visual>
+
+    <size nconmax="500" njmax="1000"/>
+	
+	<include file="robot/fetch/asset.xml"/>
+	<include file="door/asset.xml"/>
+	<include file="table/asset.xml"/>
+	<include file="box/asset.xml"/>	
+	<asset>
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="100" height="100"/>  
+        <material name='MatPlane' reflectance='0.5' texture="texplane" texrepeat="1 1" texuniform="true"/>
+    </asset>
+	
+	<!-- Bind mocap -->
+	<equality>
+        <weld body1="mocap0" body2="gripper_link" solref="0.01 1" solimp=".02 .1 0.050"/>
+	</equality>
+
+    <default>
+    	<default class="obj">
+			<geom solref="0.008 1" solimp="0.93 0.97 0.001" margin="0.001" user="0" type="mesh" rgba="1 1 1 1" material="geomMat" condim="4"/>
+		</default>
+    </default>
+	
+	<worldbody>
+	
+		<geom name='floor' pos='0 0 0' size='10 10 0.125' type='plane' material="MatPlane" condim='3'/>
+
+		<!--Mocap body for tele-op-->
+		<body name="mocap0" mocap="true" pos="0.300 1.234 0.786" euler="1.57 0 0">
+            <geom type="mesh" mesh="gripper_link" group="2" euler="1.57 0 -1.57" contype="0" conaffinity="0" rgba=".5 .5 .5 0.15" pos="0 0 -0.16645"/>
+			<geom type="mesh" mesh="wrist_roll_link" group="2" euler="0 1.57 0" contype="0" conaffinity="0" rgba=".5 .5 .5 0.15"/>
+        </body>
+
+		<include file="robot/fetch/chain.xml"/>
+		
+		<body name="Table" pos="0.3 1 0.5">
+			<include file="table/chain.xml"/>	
+		</body>
+
+		<body name="DoorLR" pos="-.225 0.45 0.57" euler="0 0 1.57">
+			<include file="door/chain0.xml"/>	
+		</body>
+		
+		<body name="DoorUR" pos="-.225 0.45 1.175" euler="0 0 1.57">
+			<include file="door/chain1.xml"/>	
+		</body>
+		
+		<body name="Shelf" pos="-1 -.2 0.5">
+			<include file="shelf/chain.xml"/>	
+		</body>
+		
+		<body childclass="obj" name="obj0" pos=".8 1.2 .8" euler="0 0 1.2">
+			<inertial pos="0 0 0" mass=".01" diaginertia="0.00005 0.00008 0.00004"/>
+			<geom name="C_book" type="box" group="3" size="0.1 0.030 .2" rgba="0.1 0.5 0.6 1" contype="0" conaffinity="1"/>
+			<geom group="1" name="V_book" type="box" size="0.1 0.030 .2" rgba="0.3 0.2 0.5 1"/>
+			<joint name="Jrect" type="free" limited="false"/>
+			<!--<site name="book_handle" pos="-.07 0 0" group="2" euler="0 0 -1.57"/>-->
+		</body>	
+	
+		
+		<body childclass="obj" name="obj1" pos="-.1 1.0 .5" >
+			<inertial pos="0 0 0.13" mass=".01" diaginertia="0.00003 0.00003 0.000005"/>
+			<geom group="1" type="capsule"  size="0.0351 .095" rgba="0.8 0.6 0.8 1" pos="0 0 .125"/>
+			<geom group="1" type="cylinder" size="0.0351 .02" rgba="0.8 0.6 0.8 1" pos="0 0 .015"/>
+			<geom group="1" type="cylinder" size="0.015 .007" rgba="0.8 0.7 0.8 1" pos="0 0 .260"/>
+			<geom type="capsule" group="3" size="0.035 0.09"  rgba="0.1 0.5 0.6 1" contype="0" conaffinity="1" pos="0 0 .13"/>
+			<geom type="capsule" group="3" size="0.005 0.04"  rgba="0.1 0.5 0.6 1" contype="0" conaffinity="1" euler="1.57 0 0"/>
+			<geom type="capsule" group="3" size="0.005 0.04"  rgba="0.1 0.5 0.6 1" contype="0" conaffinity="1" euler="0 1.57 0"/>
+			<joint name="Jbottle" type="free" limited="false" damping="0.0001" armature="0"/>
+			<!--<site name="bottle_handle" pos="0 0 .13" group="2" euler="0 0 0"/>-->
+		</body>	
+		
+		<body childclass="obj" name="obj2" pos="-.15 1.2 .5">
+			<inertial pos="0 0 0.13" mass=".05" diaginertia="0.00003 0.00003 0.000005"/>
+			<geom group="1" type="capsule"  size="0.0351 .07"  rgba="0.7 0.9 0.8 1" pos="0 0 .15"/>
+			<geom group="1" type="cylinder" size="0.0351 .002" rgba="0.7 0.9 0.8 1" pos="0 0 -.003"/>
+			<geom group="1" type="cylinder" size="0.0351 .020" rgba="0.7 0.9 0.8 1" pos="0 0 .237"/>
+			<geom group="1" type="cylinder" size="0.0050 .025" rgba="0.7 0.9 0.8 1" pos="0 0 .025"/>
+			
+			<geom type="capsule" group="3" size="0.035 0.07"  rgba="0.1 0.5 0.6 1" contype="0" conaffinity="1" pos="0 0 .15"/>
+			<geom type="capsule" group="3" size="0.005 0.04"  rgba="0.1 0.5 0.6 1" contype="0" conaffinity="1" euler="1.57 0 0"/>
+			<geom type="capsule" group="3" size="0.005 0.04"  rgba="0.1 0.5 0.6 1" contype="0" conaffinity="1" euler="0 1.57 0"/>
+			
+			<joint name="Jglass" type="free" limited="false" damping="0.0001" armature="0"/>
+			<!--<site name="glass_handle" pos="0 0 .15" group="2"/>-->
+		</body>
+	
+	</worldbody>
+
+</mujoco>
