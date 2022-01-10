@@ -74,10 +74,11 @@ exploration phase agent playing the game.
 
 To robustify, put a set of `.demo` files from different runs of Phase 1 into a folder
 (we used 10 in all cases, a single demonstration can also work, but is less
-likely to succeed). Then run `./phase2.sh <game> <demo_folder> <results_folder> <timesteps>`. This should work with `mpirun` if you are using distributed 
-training (we used 8 GPUs). The default game is MontezumaRevenge, default demo folder is `demos`, default resulst folder is `results`
+likely to succeed). Then run `./phase2.sh <game> <demo_folder> <results_folder> <timesteps>`. The default game is MontezumaRevenge, default demo folder is `demos`, default resulst folder is `results`
 and default timesteps is `2,500,000` (corresponding to 10 billion frames as used in the paper for most games). The robustification
 code doesn't handle relative paths well so it is recommended to give it absolute paths.
+
+Important: all of the robustification results in the paper were performed with 8 GPUs through MPI. The `phase2*.sh` scripts do not start MPI themselves, you will need to do so yourself when calling them, e.g. by running `mpirun -np 8 ./phase2.sh <arguments>`. 
 
 You may then test the performance of your trained neural network using 
 `./phase2_atari_test.sh <game> <neural_net> <test_results_folder>`
@@ -86,7 +87,7 @@ This will produce `.json` files for each possible number of no-ops (from 0 to 30
 and exact action sequences produced by the test runs.
 
 For the fetch environments, the steps are similar but with the `.sh` files containing `fetch`. In this context, `game`
-is the target shelf identifier, with the valid identifiers being `0001`, `0010`, `0100` and `1000`.
+is the target shelf identifier, with the valid identifiers being `0001`, `0010`, `0100` and `1000`. These scripts also need to be run on 8 GPUs with MPI as described above to reproduce our exact results.
 
 Note that the `gen_demo`
 script for fetch produces 10 demos from a single exploration phase run, so you do not need to run the exploration phase
