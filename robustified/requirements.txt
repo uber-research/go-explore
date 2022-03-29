@@ -18,7 +18,7 @@ google-pasta==0.2.0
 grpcio==1.28.1
 gym==0.10.11
 h5py==2.10.0
-horovod==0.19.1
+horovod==0.24.0
 idna==2.9
 imageio==2.8.0
 imageio-ffmpeg==0.4.1
